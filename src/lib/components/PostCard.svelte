@@ -5,6 +5,6 @@
 </script>
 
 <div>
-    <span>{post.title}</span>
-    <a href={getPostPath(post)}>Read more</a>
+    <a href={getPostPath(post)}><span>{post.title}</span></a>
+    <span>{post.date}</span>
 </div>

@@ -4,7 +4,7 @@ export interface Post {
     title: string;
     author: string;
     description: string;
-    date: string;
+    date: Date;
     published: boolean;
 }
 
@@ -19,12 +19,13 @@ export async function getPosts(): Promise<Post[]> {
         const post = (await resolver()) as App.MdsvexFile;
         return {
             slug,
+            date: post.metadata.date as unknown as Date, // mdsvx is actually parsing this as a date already
             ...post.metadata,
         } as Post;
     }));
 
     const publishedPosts = posts.filter(post => post.published);
-    publishedPosts.sort((a, b) => (new Date(a.date)) > (new Date(b.date)) ? -1 : 1);
+    publishedPosts.sort((a, b) => a.date > b.date ? -1 : 1);
 
     return publishedPosts;
 }
