@@ -1,10 +1,15 @@
 services:
   static-site:
-    image: "."
+    build: "."
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`wretched.computer`)"
       - "traefik.http.routers.frontend.entrypoints=websecure"
-      - "traefik.http.services.frontend.loadbalancer.server.port=80"
-      - "traefik.http.routers.frontend.service=frontend"
+      - "traefik.port=80"
       - "traefik.http.routers.frontend.tls.certresolver=leresolver"
+    networks:
+      - traefik_default
+
+networks:
+  traefik_default:
+    external: true
