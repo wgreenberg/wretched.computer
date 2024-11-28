@@ -15,13 +15,14 @@
 
 {#snippet element(e: unknown)}
     {#if typeof e === 'string' && e.startsWith('<') && e.endsWith('>')}
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
         {@html e}
     {:else}
         {e}
     {/if}
 {/snippet}
 
-<table class="table-fixed w-3/4">
+<table class="table-auto self-center w-3/4">
     {#if caption}
         <caption class="caption-bottom">
             {caption}
@@ -41,7 +42,7 @@
             <tr>
                 {#each row as rowElement, index}
                     {#if options.firstColumnHeader && index == 0}
-                        <th class="border-r-2 border-r-[--tw-prose-th-borders]">{@render element(rowElement)}</th>
+                        <th class="border-r-[1px] text-[--tw-prose-headings] border-r-[--tw-prose-th-borders]">{@render element(rowElement)}</th>
                     {:else}
                         <td>{@render element(rowElement)}</td>
                     {/if}

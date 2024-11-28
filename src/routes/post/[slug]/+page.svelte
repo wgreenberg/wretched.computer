@@ -18,12 +18,18 @@
             <h1 class="text-center font-serif">{data.metadata.title}</h1>
             <h2 class="text-center font-serif">{dateToString(data.metadata.date)}</h2>
         </div>
-        <div class="shadow-xl p-5">
+        <div class="flex flex-col items-center justify-center shadow-xl p-5">
             {@render data.content()}
         </div>
     </article>
 </main>
 
 <style>
-    :global(.frac-line) { border-color: --tw-prose-body }
+    :global(.frac-line) {
+        border-color: --tw-prose-body;
+    }
+
+    :global(.math-display) {
+        @apply bg-[--tw-prose-pre-bg] rounded-md p-1 overflow-auto shadow-md w-full;
+    }
 </style>

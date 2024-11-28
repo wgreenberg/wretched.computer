@@ -8,6 +8,11 @@ published: true
 <script>
     import Table from "$lib/components/Table.svelte";
     import katex from 'katex';
+
+    // shorthand for rendering latex
+    function l(s) {
+        return katex.renderToString(s);
+    }
 </script>
 
 I've recently gotten very into Leder Games/Cole Wherle's newest board game, Arcs. It's a scrappy, clever game about clashing space empires, and it's chock full of deliciously thorny mechanics that lead to interesting decisionmaking.
@@ -61,20 +66,21 @@ Back to our roll of $n$ dice and its result, $R_n$. To make things a bit simpler
 As expected, $2$ and $12$ occur just once to account for the unique rolls (1, 1) and (6, 6) that produce them, and $7$ is the most frequent outcome. Since each individual cell of this chart has a $\dfrac{1}{6} * \dfrac{1}{6} = \dfrac{1}{36}$ chance of occurring, we can simply multiply the number of occurrence of each value by $\dfrac{1}{36}$ to get the probability of that outcome:
 
 <Table
-    header={["Outcome", "# Occurrences", "Probability"]}
+    header={["Roll outcome", "# Occurrences", "Probability of roll"]}
     rows={[
-        [2, 1, katex.renderToString("\\dfrac{1}{36}")],
-        [3, 2, katex.renderToString("\\dfrac{2}{36}")],
-        [4, 3, katex.renderToString("\\dfrac{3}{36}")],
-        [5, 4, katex.renderToString("\\dfrac{4}{36}")],
-        [6, 5, katex.renderToString("\\dfrac{5}{36}")],
-        [7, 6, katex.renderToString("\\dfrac{6}{36}")],
-        [8, 5, katex.renderToString("\\dfrac{5}{36}")],
-        [9, 4, katex.renderToString("\\dfrac{4}{36}")],
-        [10, 3, katex.renderToString("\\dfrac{3}{36}")],
-        [11, 2, katex.renderToString("\\dfrac{2}{36}")],
-        [12, 1, katex.renderToString("\\dfrac{1}{36}")],
+        [2, 1, l("\\dfrac{1}{36}")],
+        [3, 2, l("\\dfrac{2}{36}")],
+        [4, 3, l("\\dfrac{3}{36}")],
+        [5, 4, l("\\dfrac{4}{36}")],
+        [6, 5, l("\\dfrac{5}{36}")],
+        [7, 6, l("\\dfrac{6}{36}")],
+        [8, 5, l("\\dfrac{5}{36}")],
+        [9, 4, l("\\dfrac{4}{36}")],
+        [10, 3, l("\\dfrac{3}{36}")],
+        [11, 2, l("\\dfrac{2}{36}")],
+        [12, 1, l("\\dfrac{1}{36}")],
     ]}
+    caption={"Probabilities of all 2 die outcomes"}
     />
 
 And hey, just like that we've just built a PMF! To calculate the probability of some roll, just look up the outcome and read out its corresponding probability.
@@ -83,8 +89,8 @@ Before we proceed, let's take a step back and generalize the steps we took here.
 
 1. **Enumeration**: Given the faces on each die, we enumerated the collection of all possible rolls
 2. **Combination**: For each possible combination of rolls $D_1 = a$ and $D_2 = b$:
-    a. We calculated the outcome's value: $a + b$
-    b. We calculated the outcome's probability: $P(D_1 = a) * P(D_2 = b)$ (which in our example was just $\dfrac{1}{6} * \dfrac{1}{6}$, but worth writing out for later)
+    1. We calculated the outcome's value: $a + b$
+    2. We calculated the outcome's probability: $P(D_1 = a) * P(D_2 = b)$ (which in our example was just $\dfrac{1}{6} * \dfrac{1}{6}$, but worth writing out for later)
 3. **Consolidation**: We added together the probabilities of all rolls with equivalent outcomes
 
 Now for the leap of faith. Suppose we wanted a nice, compact, closed-form equation that performs each of these three steps. Luckily, that's exactly what generating functions allow us to do, though it's not so clear from the outset _how_ they manage to do it.
@@ -95,37 +101,57 @@ Instead of diving into generating functions head-first, let's approach them a bi
 
 First off, **Enumeration**. What we're basically looking for is something called a [Cartesian product](https://en.wikipedia.org/wiki/Cartesian_product) of both die's set of face values. This would give us all possible pairs of faces from the two dice. One idea that might occur to us is that regular old multiplication can do something like this, which many of us learned as FOIL (First, Out, Inner, Last):
 
-$$(A + B) * (C + D) = AC + AD + BC + BD$$
+$$
+(A + B) * (C + D) = AC + AD + BC + BD
+$$
 
 So if we could somehow encode each die as a sum of _somethings_ representing each face, then multiplying those two sums together would give us a giant FOIL'd sum representing every combination of dice faces. For example if we say $D_1$'s _somethings_ are $D_1 = a_1 + a_2 + a_3 + a_4 + a_5 + a_6$, and $D_2$'s are $D_2 = b_1 + b_2 + b_3 + b_4 + b_5 + b_6$, then:
 
-$$D_1 * D_2 = (a_1 + ... + a_6) * (b_1 + ... + b_6) = a_1 * b_1 + a_1 * b_2 + ...$$
+$$
+D_1 * D_2 = (a_1 + ... + a_6) * (b_1 + ... + b_6) = a_1 * b_1 + a_1 * b_2 + ...
+$$
 
 would give us all combinations of $a$'s and $b$'s. But simply setting those _somethings_ to be the face values (e.g. $D_1 = 1 + 2 + 3 + ...$) clearly wouldn't work, since we'd just up with the product of two numbers. What else might work?
 
 Well, whatever those _somethings_ are, we know we're going to be multiplying them together, so let's recall what we want from our **Combination** step: the product of two faces should somehow a) add the face values, and b) multiply their respective probabilities. At first, this might seem like something that could only be done in two separate operations. But suppose we encode two outcomes, say $D_1 = 2$ and $D_2 = 6$, like this:
 
-$$D_1 = 2 \rightarrow (\dfrac{1}{6}) * x^2$$
+$$
+\begin{align}
+&D_1 = 2 \rightarrow (\dfrac{1}{6}) * x^2 \\
+&D_2 = 6 \rightarrow (\dfrac{1}{6}) * x^6
+\end{align}
+$$
 
-$$D_2 = 6 \rightarrow (\dfrac{1}{6}) * x^6$$
 
 What we've done here is take the probability of rolling each outcome ($\dfrac{1}{6}$), and set it as the coefficient of a single-term polynomial whose degree is equal to the face's value. Why would we possibly do that? Let's see what happens when we multiply them together:
 
-$$(\dfrac{1}{6}x^2) * (\dfrac{1}{6}x^6) = (\dfrac{1}{6}) * (\dfrac{1}{6}) * x^{(2 + 6)} = (\dfrac{1}{36}) * x^8$$
+$$
+(\dfrac{1}{6}x^2) * (\dfrac{1}{6}x^6) = (\dfrac{1}{6}) * (\dfrac{1}{6}) * x^{(2 + 6)} = (\dfrac{1}{36}) * x^8
+$$
 
 Sure enough, we arrive at a new single-term polynomial whose coefficient is the probability of the two-dice outcome, and whose degree is equal to the sum of the two rolls. We've taken advantage of the unique property that exponents are added when their bases are multiplied to arrive at **Combination**'s second property, while also multiplying the probability coefficients to get the first property. Pretty convenient!
 
 For the final step, **Consolidation**, we'd like to add up the probabilities of all outcomes with equivalent values. Luckily enough, our polynomial-based encoding scheme handles this for us automatically, since any outcomes with matching degrees will add together naturally:
 
-$$p_1x^a + p_2x^a = (p_1 + p_2)x^a$$
+$$
+p_1x^a + p_2x^a = (p_1 + p_2)x^a
+$$
 
 Now we can start putting the pieces together. Since all faces $1$ through $6$ of a standard six-sided die have an equal chance of being rolled, it can be described by the polynomial:
 
-$$f(x) = \dfrac{1}{6}x^1 + \dfrac{1}{6}x^2 + \dfrac{1}{6}x^3 + \dfrac{1}{6}x^4 + \dfrac{1}{6}x^5 + \dfrac{1}{6}x^6$$
+$$
+f(x) = \dfrac{1}{6}x^1 + \dfrac{1}{6}x^2 + \dfrac{1}{6}x^3 + \dfrac{1}{6}x^4 + \dfrac{1}{6}x^5 + \dfrac{1}{6}x^6
+$$
 
 This is called a **generating function**, and although it seems odd to bring this seemingly unrelated polynomial into our problem, remember that we're just using it to associate probabilities to outcomes. And since, as we've seen, multiplying polynomials reproduces our 3 steps, if we multiply $f(x)$ by itself we should arrive at a generating function that encodes the probability distribution of rolling two dice:
 
-$$f(x) * f(x) = f^2(x) = \dfrac{1}{36}x^2 + \dfrac{2}{36}x^3 + \dfrac{3}{36}x^4 + \dfrac{4}{36}x^5 + \dfrac{5}{36}x^6 + \dfrac{6}{36}x^7 + \dfrac{5}{36}x^8 + \dfrac{4}{36}x^9 + \dfrac{3}{36}x^{10} + \dfrac{2}{36}x^{11} + \dfrac{1}{36}x^{12}$$
+$$
+\begin{align}
+f(x) * f(x) = f^2(x) = &\dfrac{1}{36}x^2 + \dfrac{2}{36}x^3 + \dfrac{3}{36}x^4 + \dfrac{4}{36}x^5 + \\
+                       &\dfrac{5}{36}x^6 + \dfrac{6}{36}x^7 + \dfrac{5}{36}x^8 + \dfrac{4}{36}x^9 + \\
+                       &\dfrac{3}{36}x^{10} + \dfrac{2}{36}x^{11} + \dfrac{1}{36}x^{12}
+\end{align}
+$$
 
 If we match each exponent-value with the outcome/probability table above, we'll find that all of the coefficients indeed match the expected probabilities. Moreover, by multiplying our generating function together repeatedly, we can arrive at a compact, closed-form description for an arbitrarily sized dice pool. And so, at last, we can derive the PMF for $R_n$ simply by calculating $f^n(x)$.
 
@@ -139,9 +165,18 @@ That said, you can definitely treat these critters like real functions and arriv
 
 A more interesting example of this would be $f(-1)$. What do you think this might do? Well, $(-1)^n$ for even powers of $n$ is just $1$, and for odd powers it's $-1$, so we end up with:
 
-$$f(-1) = \dfrac{1}{6} * (-1) + \dfrac{1}{6} * 1 + \dfrac{1}{6} * (-1) + \dfrac{1}{6} * 1 + \dfrac{1}{6} * -1 + \dfrac{1}{6} * 1 = 0$$
+$$
+\begin{align}
+f(-1) &= \dfrac{1}{6} * (-1) + \dfrac{1}{6} * 1 + \dfrac{1}{6} * (-1) + \dfrac{1}{6} * 1 + \dfrac{1}{6} * -1 + \dfrac{1}{6} * 1 \\
+      &= 0
+\end{align}
+$$
 
-In other words, it subtracts the probability of rolling an odd face from the probability of rolling an even face. In our case, this obviously cancels out to 0, since a 6 sided die has an equal number of even and odd faces. But it also tells us that rolling _any_ number of standard six-sided dice and adding the result has an equal chance of giving an even or odd number, since $f^n(-1) = f(-1) * f^n-1(-1) = 0$.
+In other words, it subtracts the probability of rolling an odd face from the probability of rolling an even face. In our case, this obviously cancels out to 0, since a 6 sided die has an equal number of even and odd faces. But it also tells us that rolling _any_ number of standard six-sided dice and adding the result has an equal chance of giving an even or odd number, since:
+
+$$
+f^n(-1) = f(-1) * f^{n-1}(-1) = 0
+$$
 
 For more on this, be sure to check out Grant Sanderson's [video on generating functions for solving a tough puzzle](https://www.youtube.com/watch?v=bOXCLR3Wric) that I referenced above.
 
@@ -154,7 +189,9 @@ So what if we have dice with different numbers of sides, or different allocation
 
 With that, let's try creating the generating function for a 4 sided die with faces ${0, 3, 7, 7}$:
 
-$$f(x) = \dfrac{1}{4} + \dfrac{1}{4}x^3 + \dfrac{1}{4}x^7 + \dfrac{1}{4}x^7 = \dfrac{1}{4} + \dfrac{1}{4}x^3 + \dfrac{1}{2}x^7$$
+$$
+f(x) = \dfrac{1}{4} + \dfrac{1}{4}x^3 + \dfrac{1}{4}x^7 + \dfrac{1}{4}x^7 = \dfrac{1}{4} + \dfrac{1}{4}x^3 + \dfrac{1}{2}x^7
+$$
 
 Since we only have 4 sides, we adjust the coefficients to be $\dfrac{1}{4}$, and since one side has 0 pips, we straightforwardly enough assign its probability to $x^0$, a.k.a. 1. And as you might hope, to obtain the result of rolling dice with different allocations of pips and different sides, you simply multiply their respective generating functions together.
 
@@ -165,12 +202,13 @@ We just need one more tool before tackling the dice in Arcs: a way of handling m
 <Table
     header={['Symbol', 'Name', 'Letter']}
     rows={[
-        [`<img class="not-prose" height=20 width=20 alt="Hit symbol" src="/images/arcs-dice/symbol-hit.png">`, 'Hit', katex.renderToString('h')],
-        [`<img class="not-prose" height=20 width=20 alt="Building hit symbol" src="/images/arcs-dice/symbol-buildinghit-white.png">`, 'Building hit', katex.renderToString('b')],
-        [`<img class="not-prose" height=20 width=20 alt="Self-hit symbol" src="/images/arcs-dice/symbol-selfhit.png">`, 'Self-hit', katex.renderToString('s')],
-        [`<img class="not-prose" height=20 width=20 alt="Intercept symbol" src="/images/arcs-dice/symbol-intercept.png">`, 'Intecept', katex.renderToString('i')],
-        [`<img class="not-prose" height=20 width=20 alt="Key symbol" src="/images/arcs-dice/symbol-key.png">`, 'Key', katex.renderToString('k')],
+        [`<img class="not-prose" height=20 width=20 alt="Hit symbol" src="/images/arcs-dice/symbol-hit.png">`, 'Hit', l('h')],
+        [`<img class="not-prose" height=20 width=20 alt="Building hit symbol" src="/images/arcs-dice/symbol-buildinghit-white.png">`, 'Building hit', l('b')],
+        [`<img class="not-prose" height=20 width=20 alt="Self-hit symbol" src="/images/arcs-dice/symbol-selfhit.png">`, 'Self-hit', l('s')],
+        [`<img class="not-prose" height=20 width=20 alt="Intercept symbol" src="/images/arcs-dice/symbol-intercept.png">`, 'Intecept', l('i')],
+        [`<img class="not-prose" height=20 width=20 alt="Key symbol" src="/images/arcs-dice/symbol-key.png">`, 'Key', l('k')],
     ]}
+    caption={"Arcs dice symbols"}
     />
 
 And for ease of reference, here are the layouts of each die:
@@ -197,11 +235,11 @@ Let's try a simple example. For a pool with two Assault dice and one Skirmish di
 
 $$
 \begin{align}
-A^2S &= (\dfrac{1}{6} + \dfrac{1}{6}h^2 + \dfrac{1}{6}h^2s + \dfrac{1}{6}hi + \dfrac{1}{3}hs)^2 * (\dfrac{1}{2} + \dfrac{1}{2}h)  \\
- &= \dfrac{1}{72} + \dfrac{1}{72}(h^5 s^2) + \dfrac{2}{72}(h^5 s) + \dfrac{1}{72}h^5 + \dfrac{2}{72}h^4 i s + \dfrac{2}{72}(h^4 i) \\
- &\quad + \dfrac{5}{72}(h^4 s^2) + \dfrac{6}{72}(h^4 s) + \dfrac{1}{72}h^4 + \dfrac{1}{72}(h^3 i^2) + \dfrac{6}{72}h^3 i s + \dfrac{2}{72}(h^3 i) \\
- &\quad + \dfrac{8}{72}(h^3 s^2) + \dfrac{6}{72}(h^3 s) + \dfrac{2}{72}h^3 + \dfrac{1}{72}(h^2 i^2) + \dfrac{4}{72}h^2 i s + \dfrac{2}{72}(h^2 i) \\
- &\quad + \dfrac{4}{72}(h^2 s^2) + \dfrac{6}{72}(h^2 s) + \dfrac{2}{72}h^2 + \dfrac{2}{72}(h i) + \dfrac{4}{72}(h s) + \dfrac{1}{72}h \\
+A^2S = &(\dfrac{1}{6} + \dfrac{1}{6}h^2 + \dfrac{1}{6}h^2s + \dfrac{1}{6}hi + \dfrac{1}{3}hs)^2 * (\dfrac{1}{2} + \dfrac{1}{2}h)  \\
+ = &\dfrac{1}{72} + \dfrac{1}{72}(h^5 s^2) + \dfrac{2}{72}(h^5 s) + \dfrac{1}{72}h^5 + \dfrac{2}{72}h^4 i s + \dfrac{2}{72}(h^4 i) + \\
+ &\dfrac{5}{72}(h^4 s^2) + \dfrac{6}{72}(h^4 s) + \dfrac{1}{72}h^4 + \dfrac{1}{72}(h^3 i^2) + \dfrac{6}{72}h^3 i s + \dfrac{2}{72}(h^3 i) + \\
+ &\dfrac{8}{72}(h^3 s^2) + \dfrac{6}{72}(h^3 s) + \dfrac{2}{72}h^3 + \dfrac{1}{72}(h^2 i^2) + \dfrac{4}{72}h^2 i s + \dfrac{2}{72}(h^2 i) + \\
+ &\dfrac{4}{72}(h^2 s^2) + \dfrac{6}{72}(h^2 s) + \dfrac{2}{72}h^2 + \dfrac{2}{72}(h i) + \dfrac{4}{72}(h s) + \dfrac{1}{72}h \\
 \end{align}
 $$
 
