@@ -149,6 +149,7 @@ COPY --from=build /site/build /usr/share/nginx/html
 services:
   static-site:
     build: "."
+    pull_policy: "build"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`wretched.computer`)"
@@ -162,5 +163,7 @@ networks:
   traefik_default:
     external: true
 ```
+
+Note the `pull_policy: "build"` line -- without it, Portainer doesn't seem to want to rebuild an image when the git repo updates.
 
 And that's it!
