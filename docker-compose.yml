@@ -1,6 +1,7 @@
 services:
   static-site:
     build: "."
+    pull_policy: "build"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=Host(`wretched.computer`)"
