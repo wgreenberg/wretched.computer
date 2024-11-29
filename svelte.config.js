@@ -11,7 +11,7 @@ const config = {
 	preprocess: [vitePreprocess(), mdsvex({
     remarkPlugins: [remarkMath],
  	  rehypePlugins: [[rehypeKatexSvelte, {
-      output: 'mathml',
+      // output: 'mathml', // MathML seems to format worse??
     }]]
 	})],
 

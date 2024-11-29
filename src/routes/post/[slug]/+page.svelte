@@ -1,5 +1,7 @@
 <script lang="ts">
-	import type { PageData } from "./$types";
+import MainBox from "$lib/components/MainBox.svelte";
+import TitleBox from "$lib/components/TitleBox.svelte";
+import type { PageData } from "./$types";
     let { data }: { data: PageData } = $props();
 
     function dateToString(dateStr: string): string {
@@ -12,16 +14,15 @@
     }
 </script>
 
-<main class="flex items-center flex-col">
-    <article class="prose prose-green m-10 w-4/5">
-        <div class="shadow-xl bg-slate-800 rounded-md p-2 w-full">
-            <h1 class="text-center font-serif">{data.metadata.title}</h1>
-            <h2 class="text-center font-serif">{dateToString(data.metadata.date)}</h2>
-        </div>
-        <div class="flex flex-col rounded-md bg-slate-700 shadow-md mt-5 p-5 w-full">
-            {@render data.content()}
-        </div>
-    </article>
+<main class="flex justify-stretch items-center flex-col">
+    <TitleBox>
+        <h1 class="text-center font-serif">{data.metadata.title}</h1>
+        <p>{data.metadata.description}</p>
+        <h3 class="text-center font-serif">{dateToString(data.metadata.date)}</h3>
+    </TitleBox>
+    <MainBox>
+        {@render data.content()}
+    </MainBox>
 </main>
 
 <style>
@@ -30,7 +31,7 @@
     }
 
     :global(.math-display) {
-        @apply bg-[--tw-prose-pre-bg] rounded-md p-1 overflow-auto shadow-md w-full;
+        @apply bg-[--tw-prose-pre-bg] rounded-md p-1 m-0 overflow-auto shadow-md w-full;
     }
 
     :global(pre) {
