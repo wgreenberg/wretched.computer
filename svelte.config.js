@@ -10,7 +10,9 @@ const config = {
 	// for more information about preprocessors
 	preprocess: [vitePreprocess(), mdsvex({
     remarkPlugins: [remarkMath],
- 	  rehypePlugins: [rehypeKatexSvelte]
+ 	  rehypePlugins: [[rehypeKatexSvelte, {
+      output: 'mathml',
+    }]]
 	})],
 
 	kit: {

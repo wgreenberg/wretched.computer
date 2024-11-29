@@ -1,0 +1,166 @@
+---
+title: The wretched.computer Stack
+description: How I build this site for easy technical blogging
+date: 11/28/2024
+published: true
+---
+
+For years now, I've been keeping a list of topics I'd like to blog about which I call my **possiblogs**, but held off from writing any of them since I've never really seen a blogging platform/framework/hellsite that actually did what I want. I've also written a handful of little web toys/experiments that I'd love to put out there, but never got around to creating a personal site to deploy them.
+
+_UNTIL NOW_
+
+You see, what I wanted from my personal site & blog felt kinda unachievable:
+
+* I should be able to write, build, and view it locally
+* I should be able to self-host it (if I'd like)
+* Effortless code snippets and math notation
+* Plaintext file formats for all blogs
+* The ability to add dynamic frontend content
+* While also being a static site
+
+But after sufficient googlage, I found that just the right combination of stuff could make it work. Namely:
+
+* [Svelte](http://svelte.dev) as a frontend framework, project scaffold, and static site build process
+* [mdsvex](https://mdsvex.pngwn.io) for Markdown blogging + the ability to add Svelte components
+* [KaTeX](https://katex.org) for easy LaTeX-in-Markdown (with requisite glue from [remark-math](https://github.com/remarkjs/remark-math) + [rehype-katex-svelte](https://github.com/kwshi/rehype-katex-svelte))
+
+With the backend being:
+* [Portainer](http://portainer.io) on a DigitalOcean droplet to automatically build & run the static site
+* [Traefik](https://traefik.io/traefik/) for reverse-proxying & certificate management
+
+There were a good number of stumbling blocks getting all of these pieces working together, so I figured I'd put this post together in case it helps others who'd like to do a similar setup. I'll break this down into two parts: The Blog and The Backend.
+
+# The Blog
+
+First off, if I wanted a static site from Markdown files, why not just go with something like Hugo or Jekyll? Well, the short answer is: I have, and they're fine! But they don't let me do things like easily drop-in custom HTML/JavaScript for interactive experiences, or interact with Rust/WASM build tools, and ultimately they tend to leave me feeling fairly restricted in what my site can be. Hence Svelte.
+
+Now this won't be a tutorial on how or why to use Svelte, for that I recommend their tutorial. I also recommend getting a project started along the lines of [mvasigh's sveltekit-mdsxvex-blog template](https://github.com/mvasigh/sveltekit-mdsvex-blog) or [Jason Yuan's great tutorial post](https://jasonyuan.net/post/making-a-statically-generated-blog-with-sveltekit/). Unfortunately, neither of them are updated to Svelte 5's newest APIs, but they're easily adapted using [Svelte's migration guide](https://svelte.dev/docs/svelte/v5-migration-guide) (or by copying what I've done in my repo).
+
+At this point, you should have a Svelte project with mdsvex installed. But to get inline LaTeX working, you'll need to install a few more things:
+
+```
+> npm install -D remark-math@3.0.0
+> npm install -D rehype-katex-svelte
+```
+
+And then include them in your `svelte.config.js` like so:
+
+```javascript
+import { mdsvex } from 'mdsvex';
+import rehypeKatexSvelte from "rehype-katex-svelte";
+import remarkMath from "remark-math";
+
+/** @type {import('@sveltejs/kit').Config} */
+const config = {
+	preprocess: [
+     	/* other plugins... */
+  	    mdsvex({
+            remarkPlugins: [remarkMath],
+         	rehypePlugins: [[rehypeKatexSvelte, {
+                output: 'mathml',
+            }]]
+   	    }),
+    ],
+	/* other config... */
+};
+
+export default config;
+```
+
+Now, if you write `$e^{\pi i} = -1$`, your Rube Goldberg machine of parsers should spit out static MathML which renders $e^{\pi i} = -1$!
+
+Note that I did run into some issues with my custom Tailwind Prose CSS color scheme where the MathML fraction line remained a light grey. Apparently this was [already fixed](https://github.com/KaTeX/KaTeX/issues/2236), but I still had to apply a custom global CSS rule to make it match:
+
+```css
+:global(.frac-line) {
+    border-color: --tw-prose-body;
+}
+```
+
+Now, building the blog is just a matter of running `npm run build`, after which the static site content will be bundled in `./build`.
+
+# The Backend
+
+Since I'm only serving static files, I opted for a simple backend setup I know very well: static files built into an HTTP-only nginx docker container, served over TLS via a Traefik container. This has a couple key advantages:
+
+1. I only need to install docker on my host server
+2. Rolling out a new version is just a matter of updating the git repo & rebuilding the docker image
+3. Traefik does all the LetsEncrypt certificate management automatically
+4. I can easily add other containers to handle other subdomain/paths with no changes to Traefik or the base image needed
+
+However, I couldn't find a good solution for automatically pulling in & deploying site changes I've pushed to GitHub. Some people recommended using self-hosted Github Runners for this, but Github's docs strongly advised against using self-hosted Runners on anything but private repos. I liked the idea of keeping my site's repo public, so I sought other options.
+
+One service that came up a few times was Portainer, which despite being a sprawling capital-E Enterprise Solution for Whatever, has a nice feature called [GitOps](https://www.portainer.io/gitops-automation) which can poll a GitHub repo every X minutes looking for changes, and when it detects them, updates/rebuilds/redeploys a docker composition. Perfect!
+
+_Except_ as I was going through the Portainer CE setup docs, it wanted me to expose its admin web UI to the whole ass internet. I guess this isn't as much of an issue for non-cloud deployments, but since I'd already setup DNS for my droplet, anyone who happened to navigate to `wretched.computer:9443` would pull up the Portainer web UI that's effectively got keys to my droplet's kingdom. Not great!
+
+So I immediately killed Portainer and started googling. One of the first results I hit was Portainer's own guide titled [How to Run Portainer Behind a Wireguard VPN](https://www.portainer.io/blog/how-to-run-portainer-behind-a-wireguard-vpn), but this was something of a bust due to its totally broken "script" for setting up the Wireguard configs. Instead, I took the basic idea and followed DO's [guide on setting up Wireguard](https://www.digitalocean.com/community/tutorials/how-to-set-up-wireguard-on-ubuntu-20-04), added some DO Firewall rules to my droplet, and bob's your uncle: I can reach Portainer's admin UI from my laptop, but from nowhere else.
+
+Now that we've got Portainer, I added two "Stacks": one for Traefik and one for the site. The Traefik stack is based on this docker-compose.yml:
+
+```yml
+services:
+  traefik:
+    container_name: traefik
+    image: "traefik:v3"
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --providers.docker
+      - --log.level=DEBUG
+      - --certificatesresolvers.leresolver.acme.httpchallenge=true
+      - --certificatesresolvers.leresolver.acme.email=<my email>
+      - --certificatesresolvers.leresolver.acme.storage=./traefik/acme.json
+      - --certificatesresolvers.leresolver.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "traefik:/traefik"
+    labels:
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+volumes:
+  traefik:
+```
+
+And my site's stack is pointed at the site's GitHub repo w/ a 5m polling timer. On the repo's side, I've got a very simple combination of `Dockerfile` and `docker-compose.yml`.
+
+```Dockerfile
+# Dockerfile
+FROM node:alpine AS build
+
+COPY . /site
+WORKDIR /site
+
+RUN npm install && npm run build
+
+FROM nginx
+
+COPY --from=build /site/build /usr/share/nginx/html
+```
+
+```yml
+# docker-compose.yml
+services:
+  static-site:
+    build: "."
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`wretched.computer`)"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.port=80"
+      - "traefik.http.routers.frontend.tls.certresolver=leresolver"
+    networks:
+      - traefik_default
+
+networks:
+  traefik_default:
+    external: true
+```
+
+And that's it!
