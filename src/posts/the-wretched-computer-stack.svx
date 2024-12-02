@@ -1,5 +1,5 @@
 ---
-title: The wretched.computer Stack
+title: The wretched Stack
 description: How I built this site for easy technical blogging
 date: 11/28/2024
 published: true

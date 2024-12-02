@@ -3,6 +3,7 @@
     import PostCard from "$lib/components/PostCard.svelte";
 	import TitleBox from "$lib/components/TitleBox.svelte";
 	import MainBox from "$lib/components/MainBox.svelte";
+	import Bounce from "$lib/components/Bounce.svelte";
 
     let { data }: { data: PageData } = $props();
 </script>
@@ -10,7 +11,8 @@
 <main class="flex items-center justify-stretch flex-col">
     <TitleBox>
         <h1>a terrible device</h1>
-        <p>hello traveler, I'm Will, a technologist at EFF with an interest in games, computer graphics, and math.</p>
+        <Bounce text={"hello traveler"} />
+        <p>i'm Will, and this is a lil website where i write about math, computer graphics, and perhaps even other things</p>
     </TitleBox>
     <MainBox>
         <h2>Posts</h2>

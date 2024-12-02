@@ -1,6 +1,6 @@
 ---
-title: 'Arcs Dice Blog'
-description: Dice pools, generating functions, and little guys
+title: How to Conquer the Galaxy (Probably)
+description: Dice pools and generating functions in the board game Arcs
 date: 11/24/2024
 published: true
 ---
