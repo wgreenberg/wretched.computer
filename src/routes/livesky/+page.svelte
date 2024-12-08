@@ -1,8 +1,7 @@
 <script lang="ts">
     import { type Record, isRecord } from "@atproto/api/src/client/types/app/bsky/feed/post";
     import * as AppBskyEmbedImages from '@atproto/api/src/client/types/app/bsky/embed/images'
-    import * as AppBskyEmbedVideo from '@atproto/api/src/client/types/app/bsky/embed/video'
-    import { onMount } from "svelte";
+    import { onDestroy } from "svelte";
 
     const IMAGE_HEIGHT=200;
 
@@ -75,6 +74,9 @@
 
     function blast() {
         blasting = true;
+        if (websocket) {
+            websocket.close();
+        }
         websocket = new WebSocket(firehoseUrl);
         websocket!.onmessage = (event) => {
             try {
@@ -116,7 +118,9 @@
 
     function stop() {
         blasting = false;
-        websocket!.onmessage = null;
+        if (websocket) {
+            websocket.close();
+        }
     }
 
     interface TextSegment {
@@ -157,8 +161,8 @@
        return segments;
     }
 
-    onMount(() => {
-        return stop;
+    onDestroy(() => {
+        if (websocket) websocket.close();
     });
 </script>
 
