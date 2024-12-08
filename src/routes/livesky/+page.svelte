@@ -21,10 +21,10 @@
 
     const firehoseUrl = new URL("wss://jetstream1.us-west.bsky.network/subscribe");
     firehoseUrl.searchParams.append('wantedCollections', 'app.bsky.feed.post');
-    let websocket: WebSocket | undefined;
+    let websocket: WebSocket | undefined = undefined;
     let showEmbeds = $state(false);
     let keywordsStr = $state('');
-    let keywords = $derived(keywordsStr === '' ? [] : keywordsStr.split(' '));
+    let keywords = $derived(keywordsStr === '' ? [] : keywordsStr.split(' ').filter(word => word.length > 0));
     let blasting = $state(false);
 
     const posts: Post[] = $state([]);
@@ -75,6 +75,7 @@
 
     function blast() {
         blasting = true;
+        websocket = new WebSocket(firehoseUrl);
         websocket!.onmessage = (event) => {
             try {
                 const msg = JSON.parse(event.data);
@@ -157,7 +158,6 @@
     }
 
     onMount(() => {
-        websocket = new WebSocket(firehoseUrl);
         return stop;
     });
 </script>
