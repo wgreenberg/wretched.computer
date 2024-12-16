@@ -130,7 +130,7 @@ describe('Dicetower', () => {
 
     it('should stringify', () => {
         const tower = Dicetower.createArcsTower(1, 4, 0)
-        expect(tower.stringify('D', ['h', 's', 'b', 'n', 'k'])).toBe("D(h, s, b, n, k) = \\dfrac{1}{7776}(3 + 3h)(1 + h^{2} + h^{2}s + hn + 2hs)^4");
+        expect(tower.stringify('D', ['h', 's', 'b', 'n', 'k'])).toBe("D(h, s, b, n, k) = \\dfrac{1}{7776}(3 + 3h)(1 + h^{2} + h^{2}s + hn + 2hs)^{4}");
     })
 
     it('calculates Arcs probability distribution', () => {

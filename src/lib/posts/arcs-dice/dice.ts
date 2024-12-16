@@ -219,7 +219,7 @@ export class Dicetower {
                 const numDice = this.numDice[i];
                 if (numDice === 0) return;
                 let term = `(${d.p.stringify(variableNames)})`;
-                if (this.numDice[i] > 1) term += `^${numDice}`;
+                if (this.numDice[i] > 1) term += `^{${numDice}}`;
                 return term;
             })
             .filter(term => term !== undefined)
