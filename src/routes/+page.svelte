@@ -15,15 +15,15 @@
         <p>i'm Will, and this is a lil website where i write about math, computer graphics, and perhaps even other things</p>
     </TitleBox>
     <MainBox>
-        <h2>Other Stuff</h2>
-        <ul>
-            <li><a href="/livesky"><span>livesky - sip the bluesky firehose</span></a></li>
-        </ul>
-    </MainBox>
-    <MainBox>
         <h2>Posts</h2>
         {#each data.posts as post}
             <PostCard {post} />
         {/each}
+    </MainBox>
+    <MainBox>
+        <h2 class="mb-2">Other Stuff</h2>
+        <ul>
+            <li><a href="/livesky"><span>livesky - sip the bluesky firehose</span></a></li>
+        </ul>
     </MainBox>
 </main>

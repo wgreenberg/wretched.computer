@@ -1,12 +1,13 @@
 ---
 title: How to Conquer the Galaxy (Probably)
 description: Dice pools and generating functions in the board game Arcs
-date: 11/24/2024
+date: 12/15/2024
 published: true
 ---
 
 <script>
     import Table from "$lib/components/Table.svelte";
+    import Calculator from "$lib/posts/arcs-dice/Calculator.svelte";
     import katex from 'katex';
 
     // shorthand for rendering latex
@@ -23,11 +24,15 @@ One of these mechanics is its system of building dice pools. Whenever you send y
 
 Each die has a different utility and risk profile: blue Skirmish dice are basically a coin flip for whether you'll do damage, but carry no risk of harming your own ships. The red Assault dice do considerably more damage to the enemy, but with a higher chance of blowing up your fleet. And the orange Raid dice carry the most risk of self-damage, as well as chances of blowing up enemy buildings (which can be good or bad), but importantly are the only dice which let you roll keys, the game's way of stealing resources and other goodies.
 
-Building your dice pool is an exercise in risk management: how many of your own ships can you afford to blow up to get what you want? With with the exception of blue Skirmish dice, the symbols are unevenly allocated over the faces of each die, making for some dramatic dice rolls.
+Building your dice pool is an exercise in risk management: how many of your own ships can you afford to blow up to get what you want? With the exception of blue Skirmish dice, the symbols are unevenly allocated over the faces of each die, making for some dramatic dice rolls.
 
 Now to be clear, I don't think Cole Wherle intended players to perform exacting calculations of the odds for every dice pool. The gist of the mechanic is that one die is safe, one is risky, and one is _real risky_, so plan accordingly.
 
-But as a fan of recreational math, I got to wondering: **given any assortment of Skirmish, Assault, and Raid dice, what are the odds of rolling any given outcome?** And as it turns out, what I thought would be a fairly dreadful brute-force statistics problem actually led to some elegant math in unexpected places.
+But as a fan of recreational math, I got to wondering: **given any assortment of Skirmish, Assault, and Raid dice, what are the odds of rolling any given outcome?** For example, suppose I roll 2 Skirmish dice and 2 Assault die, what are the odds of me rolling hits vs self-hits? And as it turns out, what I thought would be a fairly dreadful brute-force statistics problem actually led to some elegant math in unexpected places.
+
+To whet your appetite, here's a dice pool calculator I wrote using the approach we're about to cover. Don't worry if you don't know Arcs or what the symbols mean, hopefully that will all make sense by the end of this post.
+
+<Calculator nAssaultInit={2} nSkirmishInit={2} />
 
 ## A simpler case
 
@@ -153,15 +158,15 @@ f(x) * f(x) = f^2(x) = &\dfrac{1}{36}x^2 + \dfrac{2}{36}x^3 + \dfrac{3}{36}x^4 +
 \end{align}
 $$
 
-If we match each exponent-value with the outcome/probability table above, we'll find that all of the coefficients indeed match the expected probabilities. Moreover, by multiplying our generating function together repeatedly, we can arrive at a compact, closed-form description for an arbitrarily sized dice pool. And so, at last, we can derive the PMF for $R_n$ simply by calculating $f^n(x)$.
+If we match each exponent-value with the outcome/probability table above, we'll find that all of the coefficients indeed match the expected probabilities. Moreover, by multiplying our generating function together repeatedly, we can arrive at a compact, closed-form description for an arbitrarily sized dice pool. And so, at last, we can derive the PMF for $R_n$ simply by expanding $f^n(x)$.
 
 ## An interlude on $x$
 
 "Cool functions", I can hear you saying, "but what are they functions _of_?" And you're right to be leery. If the coefficients of our function represent probabilities, and the exponents represent dice faces, what meaning does $x$ have?
 
-Well in short, it's just a symbol. When generating a PMF, we're not actually evaluating our generating functions $f(x)$ for any values of $x$. As Herbert Wilf said in the excellent [_generatingfunctionology_](https://www2.math.upenn.edu/~wilf/DownldGF.html), "a generating function is a clothesline on which we hang up a sequence of numbers for display". The coefficients of these functions are the sequence we're interested in displaying, not the values of the function itself.
+Well in short, it's just a symbol. When generating a PMF, we're not really evaluating our generating functions $f(x)$ for any values of $x$. As Herbert Wilf said in the excellent [_generatingfunctionology_](https://www2.math.upenn.edu/~wilf/DownldGF.html), "a generating function is a clothesline on which we hang up a sequence of numbers for display". The variable $x$ is merely the clothespin holding up the coefficients that we're interested in, and isn't necessarily terribly important.
 
-That said, you can definitely treat these critters like real functions and arrive at some really neat insights into your subject. One basic example of this would be to evaluate $f(1)$, which for our generating function above would simply equal the sum of the coefficients (a.k.a. probabilities). And since all probabilities in a distribution must add to equal $1$, we know that $f(1) = 1$.
+That said, you can definitely treat these critters like real functions and evaulate them at various points to arrive at some really neat insights into your subject, and as we'll see in the next post, there's some clever evaluation we can do to cheaply pull out our coefficients. A simpler example of this would be to evaluate $f(1)$, which for our generating function above would simply equal the sum of the coefficients (a.k.a. probabilities). And since all probabilities in a distribution must add to equal $1$, we know that $f(1) = 1$.
 
 A more interesting example of this would be $f(-1)$. What do you think this might do? Well, $(-1)^n$ for even powers of $n$ is just $1$, and for odd powers it's $-1$, so we end up with:
 
@@ -197,7 +202,7 @@ Since we only have 4 sides, we adjust the coefficients to be $\dfrac{1}{4}$, and
 
 ## Arcs!
 
-We just need one more tool before tackling the dice in Arcs: a way of handling multiple _types_ of pips. In Arcs, each dice can any number of 5 different symbols. I'll assign each of them a letter, which will be useful going forward:
+We just need one more tool before tackling the dice in Arcs: a way of handling multiple _types_ of pips. In Arcs, each dice can have any number of 5 different symbols. I'll assign each of them a letter, which will be useful for us going forward:
 
 <Table
     header={['Symbol', 'Name', 'Letter']}
@@ -205,7 +210,7 @@ We just need one more tool before tackling the dice in Arcs: a way of handling m
         [`<img class="not-prose" height=20 width=20 alt="Hit symbol" src="/images/arcs-dice/symbol-hit.png">`, 'Hit', l('h')],
         [`<img class="not-prose" height=20 width=20 alt="Building hit symbol" src="/images/arcs-dice/symbol-buildinghit-white.png">`, 'Building hit', l('b')],
         [`<img class="not-prose" height=20 width=20 alt="Self-hit symbol" src="/images/arcs-dice/symbol-selfhit.png">`, 'Self-hit', l('s')],
-        [`<img class="not-prose" height=20 width=20 alt="Intercept symbol" src="/images/arcs-dice/symbol-intercept.png">`, 'Intecept', l('i')],
+        [`<img class="not-prose" height=20 width=20 alt="Intercept symbol" src="/images/arcs-dice/symbol-intercept.png">`, 'Intecept', l('n')],
         [`<img class="not-prose" height=20 width=20 alt="Key symbol" src="/images/arcs-dice/symbol-key.png">`, 'Key', l('k')],
     ]}
     caption={"Arcs dice symbols"}
@@ -215,15 +220,15 @@ And for ease of reference, here are the layouts of each die:
 
 ![Diagram of Arcs' Assault, Raid, and Skirmish dice](/images/arcs-dice/dice.png)
 
-How can we represent these? One possiblity might be to create separate generating functions for each type of symbol appearing on each die. So the Assault die would have a hit function, a self-hit function, and an intercept function. But this approach treats the different pip types as independent from one another, and would fail to account for the fact that the 1 intercept symbol on Assault dice can only ever be paired with the single hit symbol.
+How can we represent these? One possiblity might be to create separate generating functions for each type of symbol appearing on each die. So the Assault die would have a hit function, a self-hit function, and an intercept function. But this approach incorrectly treats the different pip types as independent from one another, and would fail to account for the fact that the 1 intercept symbol on Assault dice can only ever be paired with the single hit symbol.
 
-Instead, we make our generating functions _multivariate_, i.e. they are functions of more than one variable. In this model, we'll be writing three dice functions on the five pip type variables: $A(h, s, b, i, k)$ for Assault dice, $S(h, s, b, i, k)$ for Skirmish, and $R(h, s, b, i, k)$ for Raid:
+Instead, we make our generating functions _multivariate_, i.e. they are functions of more than one variable. In this model, each type of die gets its own function on five variables: $A(h, s, b, n, k)$ for Assault dice, $S(h, s, b, n, k)$ for Skirmish, and $R(h, s, b, n, k)$ for Raid:
 
 $$
 \begin{align}
-&A(h, s, b, i, k) = \dfrac{1}{6} + \dfrac{1}{6}h^2 + \dfrac{1}{6}h^2s + \dfrac{1}{6}hi + \dfrac{1}{3}hs \\
-&S(h, s, b, i, k) = \dfrac{1}{2} + \dfrac{1}{2}h \\
-&R(h, s, b, i, k) = \dfrac{1}{6}ik^2 + \dfrac{1}{6}hk + \dfrac{1}{6}bk + \dfrac{1}{3}hb + \dfrac{1}{6}i \\
+&A(h, s, b, n, k) = \dfrac{1}{6} + \dfrac{1}{6}h^2 + \dfrac{1}{6}h^2s + \dfrac{1}{6}hn + \dfrac{1}{3}hs \\
+&S(h, s, b, n, k) = \dfrac{1}{2} + \dfrac{1}{2}h \\
+&R(h, s, b, n, k) = \dfrac{1}{6}nk^2 + \dfrac{1}{6}hk + \dfrac{1}{6}bk + \dfrac{1}{3}hb + \dfrac{1}{6}n \\
 \end{align}
 $$
 
@@ -235,11 +240,11 @@ Let's try a simple example. For a pool with two Assault dice and one Skirmish di
 
 $$
 \begin{align}
-A^2S = &(\dfrac{1}{6} + \dfrac{1}{6}h^2 + \dfrac{1}{6}h^2s + \dfrac{1}{6}hi + \dfrac{1}{3}hs)^2 * (\dfrac{1}{2} + \dfrac{1}{2}h)  \\
- = &\dfrac{1}{72} + \dfrac{1}{72}(h^5 s^2) + \dfrac{2}{72}(h^5 s) + \dfrac{1}{72}h^5 + \dfrac{2}{72}h^4 i s + \dfrac{2}{72}(h^4 i) + \\
- &\dfrac{5}{72}(h^4 s^2) + \dfrac{6}{72}(h^4 s) + \dfrac{1}{72}h^4 + \dfrac{1}{72}(h^3 i^2) + \dfrac{6}{72}h^3 i s + \dfrac{2}{72}(h^3 i) + \\
- &\dfrac{8}{72}(h^3 s^2) + \dfrac{6}{72}(h^3 s) + \dfrac{2}{72}h^3 + \dfrac{1}{72}(h^2 i^2) + \dfrac{4}{72}h^2 i s + \dfrac{2}{72}(h^2 i) + \\
- &\dfrac{4}{72}(h^2 s^2) + \dfrac{6}{72}(h^2 s) + \dfrac{2}{72}h^2 + \dfrac{2}{72}(h i) + \dfrac{4}{72}(h s) + \dfrac{1}{72}h \\
+A^2S = &(\dfrac{1}{6} + \dfrac{1}{6}h^2 + \dfrac{1}{6}h^2s + \dfrac{1}{6}hn + \dfrac{1}{3}hs)^2 * (\dfrac{1}{2} + \dfrac{1}{2}h)  \\
+ = &\dfrac{1}{72} + \dfrac{1}{72}(h^5 s^2) + \dfrac{2}{72}(h^5 s) + \dfrac{1}{72}h^5 + \dfrac{2}{72}h^4 n s + \dfrac{2}{72}(h^4 n) + \\
+ &\dfrac{5}{72}(h^4 s^2) + \dfrac{6}{72}(h^4 s) + \dfrac{1}{72}h^4 + \dfrac{1}{72}(h^3 n^2) + \dfrac{6}{72}h^3 n s + \dfrac{2}{72}(h^3 n) + \\
+ &\dfrac{8}{72}(h^3 s^2) + \dfrac{6}{72}(h^3 s) + \dfrac{2}{72}h^3 + \dfrac{1}{72}(h^2 n^2) + \dfrac{4}{72}h^2 n s + \dfrac{2}{72}(h^2 n) + \\
+ &\dfrac{4}{72}(h^2 s^2) + \dfrac{6}{72}(h^2 s) + \dfrac{2}{72}h^2 + \dfrac{2}{72}(h n) + \dfrac{4}{72}(h s) + \dfrac{1}{72}h \\
 \end{align}
 $$
 
@@ -250,3 +255,5 @@ As you can see, our (_checks notes_) "simple" example has give us a pretty unwei
 * The most likely roll is 3 Hits, 2 Self-hits with probability $\dfrac{8}{72}$
 
 We can also draw more interesting statistics from this by combing through the terms. For example, the question "what are the chances of rolling more than 3 hits and up to 1 self-hit" is just a matter of adding up the probabilities for every term with a factor of $h^ns^m$ where $n \geq 3$ and $m \leq 1$.
+
+But as you can see, expanding out and interpreting these polynomials is pretty unweidly, both practically and computationally. Polynomial multiplication is a fairly intensive process, and sifting through the combinatorial explosion of monomials to sum up the coefficients is kind of a nightmare to program. Luckily, as I hinted before, there's a clever trick we can use to pull out our coefficients in a more efficient and elegant manner. Stay tuned for the next post to learn how!
