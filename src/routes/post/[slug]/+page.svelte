@@ -1,7 +1,6 @@
 <script lang="ts">
     import MainBox from "$lib/components/MainBox.svelte";
     import TitleBox from "$lib/components/TitleBox.svelte";
-    import CommentSection from "$lib/components/CommentSection.svelte";
     import type { PageData } from "./$types";
     let { data }: { data: PageData } = $props();
 
