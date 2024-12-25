@@ -128,7 +128,7 @@
         <span><u>Outcome Distribution:</u></span>
         <div class="flex flex-row">
             <div class="w-12 m-1"></div>
-            {#each {length: distribution.rangeB + 1} as foo, i}
+            {#each {length: distribution.rangeB + 1}, i}
                 {@render headerSquare(idxHorizontal, i)}
             {/each}
         </div>

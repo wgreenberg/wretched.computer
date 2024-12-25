@@ -1,5 +1,5 @@
 ---
-title: How to Conquer the Galaxy (Probably)
+title: How to conquer the galaxy (probably)
 description: Dice pools and generating functions in the board game Arcs
 date: 12/15/2024
 published: true

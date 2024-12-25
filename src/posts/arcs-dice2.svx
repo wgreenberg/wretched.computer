@@ -1,0 +1,210 @@
+---
+title: Coefficient hunting in astronomically large generating functions
+description: How to win Arcs and influence polynomials
+date: 12/20/2024
+published: false
+---
+
+<script>
+    import Calculator from "$lib/posts/arcs-dice/Calculator.svelte";
+</script>
+
+_This post is the thrilling conclusion to [How to conquery the galaxy (probably)](/post/arcs-dice), in which we discussed how the dice pools used in the board game Arcs can be modeled with things called generating functions. Definitely go check that out if you haven't already!_
+
+At the end of the last post, we found that even for very simple pools of Arcs dice, the resulting generating function can quickly explode into hundreds of monomials, which can be quite inefficient to calculate and analyze. To find out how difficult, I did some sketchy back-of-the-envelope [complexity](https://en.wikipedia.org/wiki/Computational_complexity) calculations, and found if you're naively multiplying $N$ polynomials of some maximum degree $D$ (where the degree of a multivariate polynomial is equal to the [sum of its variable's degrees](https://en.wikipedia.org/wiki/Degree_of_a_polynomial#Extension_to_polynomials_with_two_or_more_variables)), you end up with a runtime complexity of $O(D^N)$. A process whose runtime grows slower exponentially with the size of its input (in our case, the number of dice in the pool) is called an [_exponential time_](https://en.wikipedia.org/wiki/Time_complexity#Exponential_time) algorithm, and is _terrible_.
+
+There are indeed faster ways of multiplying polynomials than naively going term-by-term, but from what I've read, these techniques involve fairly advanced math and tend to only become very efficient for extremely high values of $D$. Our problem scales with the number of dice $N$, and in Arcs that maxes out at 6, so the increase in complexity didn't seem worth it.
+
+So, can we do better? Well, as you may have noticed, in the last post I included a sort of dice pool calculator at the top which (hopefully) runs fairly quickly. Let's take another look at it:
+
+<Calculator nAssaultInit={2} nSkirmishInit={2} />
+
+As you add more dice to this, you'll notice that the resulting generating function is displayed in an _unexpanded_ form. That's because the calculator isn't expanding the polynomial at all! Instead, under the hood, all it's doing is evaluating the unexpanded (and cheap to compute) generating function on a _single value_, and using the result to recover _every coefficient_ of the fully expanded polynomial. How is this possible?
+
+Well, one approach to recovering coefficients is called [polynomial interpolation](https://en.wikipedia.org/wiki/Polynomial_interpolation), which allows you to recover the _unique_ polynomial that passes through a given set of points. However, for a single-variable polynomial of degree $d$, you need to compute $d+1$ points to perform this interpolation. Nevermind the fact that interpolation is much more complicated for multivariate polynomials, but the dice calculator is only computing the result of a _single point_, so this clearly isn't what's going on.
+
+Instead, the calculator is exploiting two key facts about our generating functions:
+1. All the coefficients are positive (since we can't have negative probabilities)
+2. All the coefficients are rational numbers (they're of the form $\dfrac{n}{m}$, where $n$ is the number of occurrences of that monomial's outcome, and $m$ is the total possible outcomes)
+
+And finally, because we can easily calculate the number of outcomes for some set of dice rolls, if we multiply the unexpanded polynomial by $m$, we can arrive at a polynomial whose coefficients are all guaranteed to be **positive integers**. Let's call this multiplied polynomial a _scaled generating function_, since we're scaling our probability-based function by the total number of outcomes.
+
+And with that, we can finally do one weird trick (number theorists hate him) to recover all of the expanded polynomial's coefficients.
+
+## One Weird Trick
+
+I have to admit, I didn't find this one on my own. After googling some mishmash of words like "extract integer polynomial coefficients", I stumbled across [this r/math post](https://www.reddit.com/r/math/comments/yx0i7r/determine_a_polynomial_from_just_two_inputs/) about a technique for determining a polynomial from just two inputs. The author admits they didn't find this on their own, and cites [another r/math post in a thread about math "magic tricks"](https://www.reddit.com/r/math/comments/yk557x/comment/ius9d8b/), which itself cites a [blog post on the trick](https://www.johndcook.com/blog/2012/03/27/polynomial-trick/), which itself cites a [MathOverflow answer](https://mathoverflow.net/a/91874). That post, by MathOverflow user Aeryk in 2012, is as far as I can tell the earliest mention of this trick, so until I learn of an earlier discoverer I'll call this technique Aeryk's Sieve.
+
+Here's how it works. Say you've got a single-variable polynomial $f(x)$:
+
+$$
+f(x) = 2 + 4x + 7x^2 + 3x^3
+$$
+
+There's nothing special about $f$ except all of its coefficients are positive integers, and I kept them small for this example's sake. Let's see what happens if we calculate $f(10)$:
+
+$$
+f(10) = 2 + 4 * 10 + 7 * 100 + 3 * 1000 = 3742
+$$
+
+Why choose $f(10)$? Well, take a closer look at the digits of the answer: $3742$. Those are our coefficients $2$, $4$, $7$ and $3$, but in reverse! I'll color-code the coefficients to make them easier to pick out:
+
+$$
+f(10) = \colorbox{blue}{2} + \colorbox{red}{4} * 10 + \colorbox{green}{7} * 100 + \colorbox{plum}{3} * 1000 = \colorbox{plum}{3}\colorbox{green}{7}\colorbox{red}{4}\colorbox{blue}{2}
+$$
+
+Let's try a different, bigger example. This time we'll calculate $f(100)$:
+
+$$
+f(x) = 42 + 3x + 93x^2 + 28x^3 \\
+f(100) = \colorbox{blue}{42} + \colorbox{red}{3} * 10 + \colorbox{green}{93} * 100 + \colorbox{plum}{28} * 1000 = \colorbox{plum}{28}\colorbox{green}{93}\colorbox{red}{03}\colorbox{blue}{42}
+$$
+
+Same thing, each of our coefficients end up encoded in the result! So what's going on here?
+
+## A Based Methodology
+
+Aeryk's Sieve is exploiting the fact that if you squint hard enough, polynomials look a lot like numbers. What I mean by that is that the definition of a base 10 number whose digits are $abcd$ is:
+
+$$
+abcd = d + c * 10 + b * 10^2 + a * 10^3
+$$
+
+Which lines up with our first example quite nicely. By evaluating that one at $x=10$, we end up with a 4 digit result whose digits are the coefficients, because _that's the definition of a 4 digit number_. But of course, base 10 numbers only work for digits between $0$ and $9$ -- what if we want digits higher than that like, say, in our second example?
+
+Well, we simply pretend that the polynomial is a base $100$ number, and hence calculate at $x=100$. You'll note that this nicely accounts even for the single-digit $3$, which gets automatically zero-padded. If we tried evaluating it at 10 instead, the result $37372$'s digits don't line up with our coefficients anymore, since the coefficients are large enough to "overlap" in the result.
+
+Since Aeryk's Sieve works by interpreting the polynomial as an arbitrarily based number, it doesn't actually need to be evaluated on only powers of 10; doing so just makes for nicely formatted results that we can read _in_ base 10. So finally we can state the general form of the sieve: **For any polynomial $f$ whose largest coefficient is $C$, $f(B)$ where $B > C$ can be interpreted as a base $B$ number whose digits are the coefficients of $f$.**
+
+But, of course, there's a snag here: we're using the sieve because we don't know our generating function's coefficients, so how can we choose an appropriately sized $B$? Well, note that the original reddit post claimed we needed _two_ evaluations, not one.
+
+For our first evaluation, we'll set $B=f(1)+1$, exploting the fact that $f(1)$ for any polynomial is equal to the sum of its coefficients, and $f(1)+1$ is thus greater than any single coefficient (the $+1$ is necessary to handle monomials). Finally, we calculate $f(f(1)+1)$ which is interpretable as a base $f(1)+1$ number whose digits are the coefficients of $f$. Alternately, if we'd like to keep the nice property of reading our digits off like a base-10 string, we can simply set $B$ equal to the lowest power of 10 larger than $f(1)$.
+
+## Plucking Coefficients
+
+Let's remind ourselves why we're doing all of this this: we want to know the probabilities of specific dice pool outcomes, which in Generating Function Land is equivalent to finding the coefficients of a particular power of our function's variable(s). We'll cover our multivariate Arcs functions in a bit, but to simplify things, let's reconsider the humble standard 6 sided die, whose generating function is:
+
+$$
+f(x) = \dfrac{1}{6}x^1 + \dfrac{1}{6}x^2 + \dfrac{1}{6}x^3 + \dfrac{1}{6}x^4 + \dfrac{1}{6}x^5 + \dfrac{1}{6}x^6
+$$
+
+Since the seive needs a function with positive integer coefficients, let's produce a _scaled_ generating function by multiplying this by the total number of roll outcomes 6:
+
+$$
+f(x) = x^1 + x^2 + x^3 + x^4 + x^5 + x^6
+$$
+
+Now, suppose we wanted to find the probability of getting 15 when rolling 4 dice. In other words, we want to know the coefficient of $x^{15}$ in the expanded function $f^4(x)$.
+
+Using the conveniently power-of-10-based version of Aeryk's Sieve, we'd first calculate the smallest power of 10 greater than $f^4(1)$. Despite not knowing the expanded form of the polynomial, this is easy to calculate: simply do $f(1) = 6$ (can you see why this will always be the case for 6 sided dice?) and raise that to the fourth power to get $1296$. The next highest power of 10 is $10,000$, so we calculate:
+
+$$
+\begin{align}
+f^4(10,000) =\;&1,000,400,100,020,003,500,560,080,010, \\
+              &401,250,140,014,601,400,125,010,400, \\
+              &800,056,003,500,200,010,000,400,010, \\
+              &000,000,000,000,000
+\end{align}
+$$
+
+Which is pretty big as far as numbers go. But hopefully you can sort of pick out blocks of digits spaced 4 digits apart. To make it clearer, let me add some leading zeroes and whitespace:
+
+$$
+\begin{align}
+f^4(10,000) =\;&0001\;0004\;0010\;0020\;0035 \\
+              &0056\;0080\;0104\;0125\;0140 \\
+              &0146\;0140\;0125\;0104\;0080 \\
+              &0056\;0035\;0020\;0010\;0004 \\
+              &0001\;0000\;0000\;0000\;0000
+\end{align}
+$$
+
+So, if the sieve works, each of these 25 blocks should represent the coefficients of $f^4(x)$ in reversed order, i.e. if we number the blocks from 1 to 25, the $i$th block should be the coefficient of $x^{25 - i}$. Does this pass the sniff test?
+
+Well, I couldn't find a decent ground truth for this kind of roll's probability, but manually (read: with WolframAlpha) expanding the polynomial gives us:
+
+$$
+\begin{align}
+f^4(x) = &x^{24}+4 x^{23}+10 x^{22}+20 x^{21}+35 x^{20}+ \\
+         &56 x^{19}+80 x^{18}+104 x^{17}+125 x^{16}+140 x^{15}+ \\
+         &146 x^{14}+140 x^{13}+125 x^{12}+104 x^{11}+80 x^{10}+ \\
+         &56 x^9+35 x^8+20 x^7+10 x^6+4 x^5+ \\
+         &x^4
+\end{align}
+$$
+
+And yeah, the numbers line up! Honestly, the first time I saw this working, it felt pretty magical despite having such fairly mundane inner workings. But hey, many such cases.
+
+So, is there an easy way to pluck a specific coefficient from our giganumber, like say the one for $x^{15}$? Since we know the base $B=10,000$, what we're looking for is the 4 digits starting at $10,000^{15}$. This is pretty easy to get using a divide and modulo operation:
+
+$$
+\dfrac{f^4(10,000)}{10,000^{15}} \bmod 10,000 = 140
+$$
+
+By dividing our massive number by $10,000^{15}$, we're chopping off the leading 16 (15 powers of x + 1 constant) coefficients, each of which is composed of 4 digits, so a total of $16 * 4 = 64$ digits. Then, we use the modulo operator to lop off every digit left of the 10,000th place, leaving us with just 140, which just so happens to be the coefficient to x^{15}! This means of all the possible rolls of 4 dice, 140 of them result in a 15. To turn that into a probability, we just have to divide by the total number of possible rolls, which for a scaled generating function is always just $f(1)$, and in this case is $6^4 = 1296$. So, our probability is $\dfrac{140}{1296} = 0.108025$, or around $10.8\%$. Success!
+
+To restate this process generally, for any _scaled_ dice generating function $f(x)$, to calculate the probability of rolling $n$, we:
+1. Find the smallest base $B = 10^m$ such that $B > f(1)$
+2. Calculate $\dfrac{1}{f(1)}\left[\dfrac{f(B)}{B^n} \bmod B\right]$
+
+And while this is a great trick, it only works for polynomials with one variable. Arcs' functions, however, have five. So what do we do?
+
+## We Make The Numbers Bigger
+
+We make the numbers bigger. To illustrate this, let's use a relatively simple function of two variables:
+
+$$
+f(x, y) = 2 + 8x + 3y + 4xy^2 + 9x^3y^2
+$$
+
+Since we have two variables, let's assume we need to choose two bases, $B_1$ and $B_2$ in a process similar to the 1 variable case. As in our first example, all the coefficients are under $10$, so $B_1=10$ should work fine. Let's see what we get if we partially evaluate the function at $x=10$:
+
+$$
+\begin{align}
+f(10, y) &= 2 + 80 + 3y + 40y^2 + 9000y^2 \\
+         &= 82 + 3y + 9040y^2
+\end{align}
+$$
+
+Well hey, now this looks like a function over the single variable $y$! Let's use our imagination and pretend that's the case, then repeat the proces: we have to choose a new base that's larger than $9040$, so $B_2=10,000$ would do. Now let's see what happens if we calculate the whole thing with our two bases $f(B_1, B_2)$:
+
+$$
+f(10, 10,000) = 904,000,030,082
+$$
+
+Interesting... it does look like our digits are all accounted for in here. But how are they distributed within the number?
+
+Well, let's say we're looking for the digit corresponding to the $xy^2$ term, which should be $4$. Let's handle the $y$ first, and since the $y$ exponent is $2$, we'll need to divide and mod by $B_{2}^2 = 10,000^2$:
+
+$$
+\dfrac{904,000,030,082}{10,000^2} \bmod 10,000^2 = 9040
+$$
+
+Promising. Not only is 4 in this, but as expected, it matches the coefficient for $y^2$ in our partially evaluated $f(10, y)$ above. Now, moving on to $x$, we'd divide and mod by $B_{1}^1 = 10$:
+
+$$
+\dfrac{9040}{10} \bmod 10 = 4
+$$
+
+And bingo, we've successfully plucked the expected coefficient for a 2-variable term. As we did for the single-variable sieve, let's recap what we did here in a general format:
+
+Suppose we've got a 2-variable reduced generating function $f(x, y)$:
+* Find a suitable base $B_1 = 10^m$ such that $B_1 > f(1, 1)$
+* Find another base $B_2 = 10^p$ such that $B_2 > f(B_1, 1)$. If you happen to know the degree of $x$ (call it $deg(x)$), you can just use $B_{1}^{deg(x) + 1}$
+* Calculate $f(B_1, B_2)$, and then to calculate the coefficient for any term $x^iy^j$, calculate:
+
+$$
+\dfrac{1}{f(1, 1)} \left[ \dfrac{1}{B_{1}^i} \left[ \dfrac{1}{B_{2}^j} f(B_1, B_2) \bmod B_2 \right] \bmod B_1 \right]
+$$
+
+While I can't take credit for Aeryk's Sieve, as far as I could tell this iterative approach to handling multivaraite polynomials isn't mentioned anywhere else. And while I haven't formulated a proof for this, in my testing this approach seems to extend to any number of variables.
+
+And even though our Arcs functions are indeed of give variables, for the purposes of the calculator I only ever need to pluck terms for two variables at a time: one for each of the horizontal and vertical axes of the chart it generates. A third variable could let me create some sorta 3D distribution visualizer, but honestly anything more than two seemed like overkill to me.
+
+By passing $1$ to the other three variables, we effectively collapse together all terms that differ by those variables, allowing us to group the probabilities of just the two we're interested.
+
+And that's it! You're now able to fully calculate the vast array of tactical possibilities offered by any dice roll in Arcs.
+
+## Has this made you a better Arcs player?
+
+no
