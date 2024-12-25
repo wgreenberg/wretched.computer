@@ -1,5 +1,5 @@
 ---
-title: Coefficient hunting in astronomically large generating functions
+title: Coefficient hunting in atronomic generating functions
 description: How to win Arcs and influence polynomials
 date: 12/20/2024
 published: false
@@ -13,7 +13,7 @@ _This post is the thrilling conclusion to [How to conquery the galaxy (probably)
 
 At the end of the last post, we found that even for very simple pools of Arcs dice, the resulting generating function can quickly explode into hundreds of monomials, which can be quite inefficient to calculate and analyze. To find out how difficult, I did some sketchy back-of-the-envelope [complexity](https://en.wikipedia.org/wiki/Computational_complexity) calculations, and found if you're naively multiplying $N$ polynomials of some maximum degree $D$ (where the degree of a multivariate polynomial is equal to the [sum of its variable's degrees](https://en.wikipedia.org/wiki/Degree_of_a_polynomial#Extension_to_polynomials_with_two_or_more_variables)), you end up with a runtime complexity of $O(D^N)$. A process whose runtime grows slower exponentially with the size of its input (in our case, the number of dice in the pool) is called an [_exponential time_](https://en.wikipedia.org/wiki/Time_complexity#Exponential_time) algorithm, and is _terrible_.
 
-There are indeed faster ways of multiplying polynomials than naively going term-by-term, but from what I've read, these techniques involve fairly advanced math and tend to only become very efficient for extremely high values of $D$. Our problem scales with the number of dice $N$, and in Arcs that maxes out at 6, so the increase in complexity didn't seem worth it.
+There are indeed faster ways of multiplying polynomials than naively going term-by-term, but from what I've read, these techniques involve fairly advanced math and tend to only become very efficient for extremely high values of $D$. Our problem scales with the number of dice $N$, so the increase in complexity didn't seem worth it.
 
 So, can we do better? Well, as you may have noticed, in the last post I included a sort of dice pool calculator at the top which (hopefully) runs fairly quickly. Let's take another look at it:
 
@@ -21,7 +21,7 @@ So, can we do better? Well, as you may have noticed, in the last post I included
 
 As you add more dice to this, you'll notice that the resulting generating function is displayed in an _unexpanded_ form. That's because the calculator isn't expanding the polynomial at all! Instead, under the hood, all it's doing is evaluating the unexpanded (and cheap to compute) generating function on a _single value_, and using the result to recover _every coefficient_ of the fully expanded polynomial. How is this possible?
 
-Well, one approach to recovering coefficients is called [polynomial interpolation](https://en.wikipedia.org/wiki/Polynomial_interpolation), which allows you to recover the _unique_ polynomial that passes through a given set of points. However, for a single-variable polynomial of degree $d$, you need to compute $d+1$ points to perform this interpolation. Nevermind the fact that interpolation is much more complicated for multivariate polynomials, but the dice calculator is only computing the result of a _single point_, so this clearly isn't what's going on.
+A reasonable guess might be [polynomial interpolation](https://en.wikipedia.org/wiki/Polynomial_interpolation), which allows you to recover the _unique_ polynomial that passes through a given set of points. However, for a single-variable polynomial of degree $d$, you need to compute $d+1$ points to perform this interpolation. Nevermind the fact that interpolation is much more complicated for multivariate polynomials, but the dice calculator is only computing the result of a _single point_, so this clearly isn't what's going on.
 
 Instead, the calculator is exploiting two key facts about our generating functions:
 1. All the coefficients are positive (since we can't have negative probabilities)
@@ -31,7 +31,7 @@ And finally, because we can easily calculate the number of outcomes for some set
 
 And with that, we can finally do one weird trick (number theorists hate him) to recover all of the expanded polynomial's coefficients.
 
-## One Weird Trick
+## One weird trick
 
 I have to admit, I didn't find this one on my own. After googling some mishmash of words like "extract integer polynomial coefficients", I stumbled across [this r/math post](https://www.reddit.com/r/math/comments/yx0i7r/determine_a_polynomial_from_just_two_inputs/) about a technique for determining a polynomial from just two inputs. The author admits they didn't find this on their own, and cites [another r/math post in a thread about math "magic tricks"](https://www.reddit.com/r/math/comments/yk557x/comment/ius9d8b/), which itself cites a [blog post on the trick](https://www.johndcook.com/blog/2012/03/27/polynomial-trick/), which itself cites a [MathOverflow answer](https://mathoverflow.net/a/91874). That post, by MathOverflow user Aeryk in 2012, is as far as I can tell the earliest mention of this trick, so until I learn of an earlier discoverer I'll call this technique Aeryk's Sieve.
 
@@ -65,7 +65,7 @@ $$
 
 Same thing, each of our coefficients end up encoded in the result! So what's going on here?
 
-## A Based Methodology
+## A based methodology
 
 Aeryk's Sieve is exploiting the fact that if you squint hard enough, polynomials look a lot like numbers. What I mean by that is that the definition of a base 10 number whose digits are $abcd$ is:
 
