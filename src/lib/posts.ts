@@ -24,8 +24,7 @@ export async function getPosts(): Promise<Post[]> {
         } as Post;
     }));
 
-    const publishedPosts = posts.filter(post => post.published);
-    publishedPosts.sort((a, b) => a.date > b.date ? -1 : 1);
+    posts.sort((a, b) => a.date > b.date ? -1 : 1);
 
-    return publishedPosts;
+    return posts;
 }
