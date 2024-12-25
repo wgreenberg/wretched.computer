@@ -56,8 +56,11 @@ $$
 Let's try a different, bigger example. This time we'll calculate $f(100)$:
 
 $$
-f(x) = 42 + 3x + 93x^2 + 28x^3 \\
-f(100) = \colorbox{blue}{42} + \colorbox{red}{3} * 10 + \colorbox{green}{93} * 100 + \colorbox{plum}{28} * 1000 = \colorbox{plum}{28}\colorbox{green}{93}\colorbox{red}{03}\colorbox{blue}{42}
+\begin{align}
+f(x) &= 42 + 3x + 93x^2 + 28x^3 \\
+f(100) &= \colorbox{blue}{42} + \colorbox{red}{3} * 10 + \colorbox{green}{93} * 100 + \colorbox{plum}{28} * 1000 \\
+       &= \colorbox{plum}{28}\colorbox{green}{93}\colorbox{red}{03}\colorbox{blue}{42}
+\end{align}
 $$
 
 Same thing, each of our coefficients end up encoded in the result! So what's going on here?
