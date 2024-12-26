@@ -14,7 +14,7 @@
     }
 </script>
 
-<main class="flex justify-stretch items-center flex-col">
+<main class="flex justify-stretch items-center flex-col mb-20">
     <TitleBox>
         <h1 class="text-center font-serif">{data.metadata.title}</h1>
         <p>{data.metadata.description}</p>
