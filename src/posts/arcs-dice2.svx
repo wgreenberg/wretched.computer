@@ -2,7 +2,7 @@
 title: Coefficient hunting in gargantuan generating functions
 description: How to win Arcs and influence polynomials
 date: 12/20/2024
-published: false
+published: true
 ---
 
 <script>

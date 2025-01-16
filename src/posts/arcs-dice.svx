@@ -24,7 +24,9 @@ One of these mechanics is its system of building dice pools. Whenever you send y
 
 Each die has a different utility and risk profile: blue Skirmish dice are basically a coin flip for whether you'll score _hits_ against your enemy, and carry no risk of harming your own ships. The red Assault dice can do considerably more damage to the enemy, but with a higher chance of blowing up your fleet with _self-hits_ and _intercepts_. And the orange Raid dice carry the most risk of self-hits, as well as chances of blowing up enemy buildings (which can be good or bad), but importantly are the only dice which let you roll _keys_, the game's way of stealing goodies from your opponent.
 
-Building your dice pool is an exercise in risk management: how many of your own ships can you afford to blow up to get what you want? With the exception of blue Skirmish dice, the symbols are unevenly allocated over the faces of each die, making for some dramatic dice rolls.
+Building your dice pool is an exercise in risk management: how many of your own ships can you afford to blow up to get what you want? With the exception of blue Skirmish dice, the symbols are unevenly allocated over the faces of each die, making for some dramatic dice rolls. For future reference, here's the layout of each die from the game's manual:
+
+![Diagram of Arcs' Assault, Raid, and Skirmish dice](/images/arcs-dice/dice.png)
 
 Now to be clear, I don't think Cole Wherle intended players to perform exacting calculations of the odds for every dice pool. The gist of the mechanic is that one die is safe, one is risky, and one is _real risky_, so plan accordingly.
 
@@ -42,9 +44,9 @@ Next, we'd try to model a single roll of this dice pool, which is just the sum o
 
 Now, we can finally ask a question like "when rolling 4 dice, what are the odds of rolling a 7?" Or, in a more mathy parlance, what is the value of $R_n$'s [**probability mass function** (PMF)](https://en.wikipedia.org/wiki/Probability_mass_function) $P(R_n = 7)$? The problem, of course, is we don't know what the PMF is yet, so we can't evaluate it at anything!
 
-Probability mass functions are (in my opinion) terribly named owing to a tortured metaphor of probability "densities", but conceptually they're actually really simple: they're just functions which return the probability of getting a value for a given discrete random variable. For example, for a single die, the function is just $\dfrac{1}{6}$ for all values.
+Probability mass functions are (in my opinion) terribly named due to a tortured metaphor of probability "densities", but conceptually they're actually really simple: they're just functions which return the probability of getting a value for a given discrete random variable. For example, for a single die, the function is just $\dfrac{1}{6}$ for all values.
 
-There's a few ways we can go about calculating the PMF. Grant Sanderson (aka 3Blue1Brown) has a fantastic [video on convolutions](https://www.youtube.com/watch?v=KuXjwB4LzSA) which visualizes some of them, but the approach we'll be taking here is a bit _stranger_.
+There's a few ways we can go about calculating the PMF, and Grant Sanderson (aka 3Blue1Brown) has a fantastic [video on convolutions](https://www.youtube.com/watch?v=KuXjwB4LzSA) which demonstrates some of the traditional approaches. But as I was researching the subject matter, I discovered another way that's both _stranger_ and more elegant.
 
 ## Generating functions: a prelude
 
@@ -122,8 +124,8 @@ Well, whatever those _somethings_ are, we know we're going to be multiplying the
 
 $$
 \begin{align}
-&D_1 = 2 \rightarrow (\dfrac{1}{6}) * x^2 \\
-&D_2 = 6 \rightarrow (\dfrac{1}{6}) * x^6
+&D_1 = 2 \quad \rightarrow \quad (\dfrac{1}{6}) * x^2 \\
+&D_2 = 6 \quad \rightarrow \quad (\dfrac{1}{6}) * x^6
 \end{align}
 $$
 
