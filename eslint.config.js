@@ -5,12 +5,12 @@ import globals from 'globals';
 import ts from 'typescript-eslint';
 
 export default ts.config(
-	js.configs.recommended,
-	...ts.configs.recommended,
-	...svelte.configs['flat/recommended'],
-	prettier,
-	...svelte.configs['flat/prettier'],
-	{
+    js.configs.recommended,
+    ...ts.configs.recommended,
+    ...svelte.configs['flat/recommended'],
+    prettier,
+    ...svelte.configs['flat/prettier'],
+    {
 		languageOptions: {
 			globals: {
 				...globals.browser,
@@ -18,7 +18,7 @@ export default ts.config(
 			}
 		}
 	},
-	{
+    {
 		files: ['**/*.svelte'],
 
 		languageOptions: {
@@ -27,7 +27,7 @@ export default ts.config(
 			}
 		}
 	},
-	{
+    {
 		ignores: ['build/', '.svelte-kit/', 'dist/']
-	}
+	},
 );
