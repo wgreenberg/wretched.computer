@@ -1,10 +1,10 @@
 <script lang="ts">
-let { data, index }: {
+let { data, index, littleEndian }: {
     data: DataView,
     index?: number,
+    littleEndian?: boolean
 } = $props();
 
-let littleEndian = $state(true);
 let uint8 = $derived(index === undefined ? undefined : data.getUint8(index));
 let uint16 = $derived(index === undefined ? undefined : data.getUint16(index, littleEndian));
 let uint32 = $derived(index === undefined ? undefined : data.getUint32(index, littleEndian));

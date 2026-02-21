@@ -2,12 +2,16 @@
 import DataPane from "./DataPane.svelte";
 import HexCell from "./HexCell.svelte";
 
-let { title, data, addrOffset }: {
+let { title, data, addrOffset, littleEndian }: {
     title: string,
     data: number[],
     addrOffset?: number,
+    littleEndian?: boolean,
 } = $props();
 
+if (littleEndian === undefined) {
+    littleEndian = true;
+}
 let innerWidth = $state(0);
 let nCols = $derived(innerWidth < 500 ? 8 : 16);
 if (addrOffset === undefined) {
@@ -78,7 +82,8 @@ function zeroPadHex(n: number, pad: number): string {
                         {@const i = row * nCols + col}
                         {@const cellData = data[i]}
                         {#if cellData !== undefined}
-                            <button onclick={() => selectCell(i)}>
+                            {@const buttonClass = col % 4 === 0 && col > 0 ? 'border-l border-gray-400 border-dashed' : ''}
+                            <button class={buttonClass} onclick={() => selectCell(i)}>
                                 <HexCell
                                     data={data[i]}
                                     isHighlighted={isIndexHighlighted(i)}
@@ -121,7 +126,7 @@ function zeroPadHex(n: number, pad: number): string {
         <div>
             <span>Data Inspector</span>
         </div>
-        <DataPane data={dataView} index={highlightStart === Infinity ? undefined : highlightStart} />
+        <DataPane data={dataView} index={highlightStart === Infinity ? undefined : highlightStart} {littleEndian} />
     </div>
 </div>
 
