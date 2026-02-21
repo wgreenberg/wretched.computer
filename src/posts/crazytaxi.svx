@@ -18,15 +18,15 @@ From time to time, and usually in the winter, a certain madness takes hold of me
     <source src="/videos/crazytaxi/flythrough.mp4" type="video/mp4" />
 </video>
 
-This year, my winter madness project was adding the classic game _Crazy Taxi_ to [noclip.website](https://noclip.website), my friend [Jasper's](https://www.youtube.com/@JasperRLZ) insanely cool and ambitious project. noclip calls itself a "digital museum of video game levels", and I think that's a great way to summarize its goal: it allows users to freely explore, in the browser, 3D recreations of hundreds of maps from dozens of video games ranging from the N64 era to relatively modern PC games, while also representing an [open source recreation of _each of those games'_ original rendering methods](https://github.com/magcius/noclip.website/).
+This year, my winter madness project was adding the classic game _Crazy Taxi_ to [noclip.website](https://noclip.website), my friend [Jasper's](https://www.youtube.com/@JasperRLZ) insanely cool and ambitious project. You can [click here](https://noclip.website/#crazytaxi/dc1) to check it out, and use WASD and your mouse to freely fly around the levels of the game. noclip calls itself a "digital museum of video game levels", and I think that's a great way to summarize its goal: it allows users to freely explore, in the browser, 3D recreations of hundreds of maps from dozens of video games ranging from the N64 era to relatively modern PC games, while also representing an [open source recreation of _each of those games'_ original rendering methods](https://github.com/magcius/noclip.website/).
 
 That's because one of Jasper's rules for contributions to the site is that each added game must operate using the game's original files; no Blender exports, no pre-processing with modding tools, just rendering the game from its original files, all in the browser. That means adding a game to noclip involves effectively reverse engineering and recreating major portions of that game's code, from custom parsers for bespoke file formats, to rendering loops which often resemble the original game engine, to occasionally recreating parts of the game's AI and mechanics (seriously, check out the Bullet Bills in Super Mario Galaxy's [Buoy Base Galaxy](https://noclip.website/#smg/OceanFloaterLandGalaxy) level; you might just find an easter egg).
 
-So before we move on, I highly recommend taking a minute to explore the various games and levels on noclip. There's a seriously good chance that it has at least one game you adore, and getting to freely fly around the 3D spaces you might've last experienced as a child is an amazing experience. It should also hopefully communicate the scope of what adding a game to the site entails!
+So before we move on, I highly recommend taking a minute to explore the various games and levels on noclip. There's a seriously good chance that the site has at least one game you adore, and getting to freely fly around the 3D spaces you might've last experienced as a child is an amazing experience. It should also hopefully communicate the scope of what adding a game to the site entails!
 
 ## What were we talking about again
 
-Back to my winter madness. In previous years I contributed two fairly large games to noclip, _Halo_ and _World of Warcraft_, so I was fairly familiar with the process of reverse engineering a game and writing a renderer for it. However, for both of those games there already existed substantial modding communities and copious amounts of technical documentation for how the games worked, down to detailed byte-level diagrams of each file format. This made it more approachable (though definitely not _easy_) to write those games' renderers, and I owe those communities a huge debt of gratitude for their documentation efforts.
+Back to my winter madness. In previous years I contributed two fairly large games to noclip, [_Halo_](https://noclip.website/#Halo/bloodgulch) and [_World of Warcraft_](https://noclip.website/#WorldOfWarcraft/Warsong%20Gulch-790291), so I was fairly familiar with the process of reverse engineering a game and writing a renderer for it. However, for both of those games there already existed substantial modding communities and copious amounts of technical documentation for how the games worked, down to detailed byte-level diagrams of each file format. This made it more approachable (though definitely not _easy_) to write those games' renderers, and I owe those communities a huge debt of gratitude for their documentation efforts.
 
 But this year, I wanted to try something new: I decided I'd add a game to noclip that wasn't already understood, didn't already have the secrets of its file formats neatly displayed on a community wiki, and that didn't have any tools already for viewing its maps. And, thanks largely to my recent acquisition of a [Flippy Drive](https://www.crowdsupply.com/team-offbroadway/flippydrive) for my GameCube, I recently became re-enamored with _Crazy Taxi_, and thus my fate was sealed.
 
@@ -220,7 +220,7 @@ pub struct ArchiveHeader {
 
 #[derive(DekuRead, Debug)]
 pub struct TableOfContentsEntry {
-    #[deku(count = "64")
+    #[deku(count = "64")]
     filename: Vec<u8>,
     unk0: u32,
 }
@@ -323,7 +323,7 @@ Since we only have a good handle on the `.shp` headers right now, let's instead 
     ]}
     />
 
-It turns out the gap varies considerably, ranging from 0 bytes to 28. This is interesting, but what stood out to me were the offsets where the first `1.0` occurs. Note that they always end in a `0`, unlike the offsets to the end of our `ArchiveHeader`. This means that their offset are always multiples of `0x10`, or `16`! And if you look a bit more closely, you might notice their 2nd digits are always even -- this implies they're actually all multiples of `0x20`, or `32`. This may seem like a subtle or arbitrary observation, but it's actually a very common pattern when laying out data called [_alignment_](https://en.wikipedia.org/wiki/Data_structure_alignment#Definitions).
+It turns out the gap varies considerably, ranging from 0 bytes to 28. This is interesting, but what stood out to me were the offsets where the first `1.0` occurs. Note that they always end in a `0`, unlike the offsets to the end of our `ArchiveHeader`. This means that their offset are always multiples of `0x10`, or `16`! And if you look a bit more closely, you might notice their 2nd digits are always even -- this implies they're actually all multiples of `0x20`, or 32. This may seem like a subtle or arbitrary observation, but it's actually a very common pattern when laying out data called [_alignment_](https://en.wikipedia.org/wiki/Data_structure_alignment#Definitions).
 
 Data is often aligned to multiples of some number of bytes, sometimes referred to as its alignment boundary. This happens for a number of reasons depending on the application, but generally it's to improve runtime performance at the expense of storage size. In this case, it's hard to say exactly why the data is aligned to `0x20` byte boundaries, but it's possible it's due to the GameCube's cache size.
 
