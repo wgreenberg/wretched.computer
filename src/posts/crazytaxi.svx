@@ -14,8 +14,8 @@ published: false
 
 From time to time, and usually in the winter, a certain madness takes hold of me. Cooped up indoors from nasty weather and depressing grey vistas, I'll sink my teeth into an unreasonably sized engineering task and usually not let go for months. My friends have dubbed this my [strange moods](https://dwarffortresswiki.org/index.php/Strange_mood), named after a phenomenon in the game Dwarf Fortress where dwarves will stop whatever they are doing and pursue the construction of some ornate artifact, usually to the exclusion of everything else.
 
-<video controls>
-    <source src="/videos/crazytaxi/flythrough.mp4" type="video/mp4" />
+<video controls preload="metadata">
+    <source src="/videos/crazytaxi/flythrough.mp4#t=0.1" type="video/mp4" />
 </video>
 
 This year, my winter madness project was adding the classic game Crazy Taxi to [noclip.website](https://noclip.website), my friend [Jasper's](https://www.youtube.com/@JasperRLZ) insanely cool and ambitious "digital museum of video game levels". You can [click here](https://noclip.website/#crazytaxi/dc1) to check it out (ideally on a computer, mobile support is spotty), and use WASD and your mouse to freely fly around the levels of the game.
