@@ -57,7 +57,7 @@ function zeroPadHex(n: number, pad: number): string {
     <div class="bg-gray-900 w-fit pl-1 pr-1 rounded-t-lg">
         <span>{title}</span>
     </div>
-    <div class="flex flex-row overflow-auto max-h-96 bg-gray-600 pb-1 border border-dotted">
+    <div class="flex flex-row overflow-auto max-h-96 bg-gray-600 pb-1 border border-dotted rounded-tr-md">
         <div class="pl-1 pr-1">
             <div>
                 <span>Offset</span>
@@ -122,7 +122,7 @@ function zeroPadHex(n: number, pad: number): string {
             </div>
         </div>
     </div>
-    <div class="bg-gray-600 pl-1 pr-1 border border-dotted border-t-0">
+    <div class="bg-gray-600 pl-1 pr-1 border border-dotted border-t-0 rounded-b-md">
         <span>Data Inspector:</span>
         <DataPane data={dataView} index={highlightStart === Infinity ? undefined : highlightStart} {littleEndian} />
     </div>
