@@ -12,7 +12,7 @@ let { title, data, addrOffset, littleEndian }: {
 if (littleEndian === undefined) {
     littleEndian = true;
 }
-let innerWidth = $state(0);
+let innerWidth = $state(500);
 let nCols = $derived(innerWidth < 500 ? 8 : 16);
 if (addrOffset === undefined) {
     addrOffset = 0;
@@ -53,11 +53,11 @@ function zeroPadHex(n: number, pad: number): string {
 
 <svelte:window bind:innerWidth />
 
-<div class="font-mono flex flex-col prose-sm w-full">
+<div class="font-mono flex flex-col prose-sm">
     <div class="bg-gray-900 w-fit pl-1 pr-1 rounded-t-lg">
         <span>{title}</span>
     </div>
-    <div class="flex flex-row overflow-auto w-full max-h-96 bg-gray-600">
+    <div class="flex flex-row overflow-auto max-h-96 bg-gray-600 pb-1 border border-dotted">
         <div class="pl-1 pr-1">
             <div>
                 <span>Offset</span>
@@ -122,10 +122,8 @@ function zeroPadHex(n: number, pad: number): string {
             </div>
         </div>
     </div>
-    <div class="bg-gray-600 pl-1 w-full">
-        <div>
-            <span>Data Inspector</span>
-        </div>
+    <div class="bg-gray-600 pl-1 pr-1 border border-dotted border-t-0">
+        <span>Data Inspector:</span>
         <DataPane data={dataView} index={highlightStart === Infinity ? undefined : highlightStart} {littleEndian} />
     </div>
 </div>

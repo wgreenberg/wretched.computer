@@ -6,7 +6,7 @@ let { data }: {
 } = $props();
 </script>
 
-<span class="p-1 bg-gray-800">
+<span class="pt-1 pb-1 pl-0.5 pr-0.5 bg-gray-800">
     {#each data as byte}
         <HexCell data={byte} isHighlighted={false} />
     {/each}

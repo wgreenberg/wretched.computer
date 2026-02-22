@@ -1,8 +1,10 @@
 <script lang="ts">
-let { data, index, littleEndian }: {
+	import Toggle from "./Toggle.svelte";
+
+let { data, index, littleEndian=false }: {
     data: DataView,
     index?: number,
-    littleEndian?: boolean
+    littleEndian: boolean
 } = $props();
 
 let uint8 = $derived(index === undefined ? undefined : data.getUint8(index));
@@ -24,49 +26,49 @@ function presentValue(n: number | undefined, isFloat = false): string {
     }
 }
 
-let color1 = `bg-gray-700 pl-1 pr-1`;
-let color2 = `bg-gray-500 pl-1 pr-1`;
+let cellPadding = `overflow-x-auto`;
+
+let headerRow = `bg-gray-950 ${cellPadding}`;
+let bitColumn = `pl-2 pt-2 bg-gray-900 ${cellPadding}`;
+let data1 = `bg-gray-800 ${cellPadding}`;
+let data2 = `bg-gray-700 ${cellPadding}`;
 
 </script>
 
-<div class="flex flex-col">
-    <div class="flex flex-row font-mono prose-sm">
-        <div class="flex flex-col">
-            <span class={color1}>Bits</span>
-            <span class={color2}>8</span>
-            <span class={color1}>16</span>
-            <span class={color2}>32</span>
-        </div>
-        <div class="flex flex-col">
-            <span class={color2}>uint</span>
-            <span class={color1}>{presentValue(uint8)}</span>
-            <span class={color2}>{presentValue(uint16)}</span>
-            <span class={color1}>{presentValue(uint32)}</span>
-        </div>
-        <div class="flex flex-col">
-            <span class={color1}>int</span>
-            <span class={color2}>{presentValue(int8)}</span>
-            <span class={color1}>{presentValue(int16)}</span>
-            <span class={color2}>{presentValue(int32)}</span>
-        </div>
-        <div class="flex flex-col">
-            <span class={color2}>float</span>
-            <span class={color1}>-</span>
-            <span class={color2}>{presentValue(float16, true)}</span>
-            <span class={color1}>{presentValue(float32, true)}</span>
-        </div>
-    </div>
-    <div class="mt-3">
+<div class="flex flex-col overflow-auto">
+    <table class="table-fixed m-0">
+        <thead>
+            <tr>
+                <th class={bitColumn}>Bits</th>
+                <th class={headerRow}>uint</th>
+                <th class={headerRow}>int</th>
+                <th class={headerRow}>float</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class={bitColumn}>8</td>
+                <td class={data1}>{presentValue(uint8)}</td>
+                <td class={data2}>{presentValue(int8)}</td>
+                <td class={data1}>-</td>
+            </tr>
+            <tr>
+                <td class={bitColumn}>16</td>
+                <td class={data1}>{presentValue(uint16)}</td>
+                <td class={data2}>{presentValue(int16)}</td>
+                <td class={data1}>{presentValue(float16, true)}</td>
+            </tr>
+            <tr>
+                <td class={bitColumn}>32</td>
+                <td class={data1}>{presentValue(uint32)}</td>
+                <td class={data2}>{presentValue(int32)}</td>
+                <td class={data1}>{presentValue(float32, true)}</td>
+            </tr>
+        </tbody>
+    </table>
+    <div class="flex flex-col mt-3 mb-1 max-w-32">
         <span>Endianness:</span>
-        <div class="inline-flex items-center">
-            <label for="switch-component-on" class="text-sm cursor-pointer">Big</label>
-            <div class="relative inline-block w-11 h-5 ml-1 mr-1">
-                <input bind:checked={littleEndian} id="switch-component-on" type="checkbox" class="peer appearance-none w-11 h-5 bg-slate-100 rounded-full checked:bg-slate-800 cursor-pointer transition-colors duration-300" />
-                <label for="switch-component-on" class="absolute top-0 left-0 w-5 h-5 bg-white rounded-full border border-slate-300 shadow-sm transition-transform duration-300 peer-checked:translate-x-6 peer-checked:border-slate-800 cursor-pointer">
-                </label>
-            </div>
-            <label for="switch-component-on" class="text-sm cursor-pointer">Little</label>
-        </div>
+        <Toggle bind:on={littleEndian} offLabel="Big" onLabel="Little" />
     </div>
 </div>
 
