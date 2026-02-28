@@ -10,15 +10,19 @@
 
 <main class="flex items-center justify-stretch flex-col">
     <TitleBox>
-        <h1>a terrible device</h1>
+        <h1 class="font-serif">a terrible device</h1>
         <Bounce text={"hello traveler"} />
-        <p>i'm Will, and this is a lil website where i write about math, computer graphics, and perhaps even other things</p>
+        <h4 class="text-center w-4/5">I'm Will, and this is a lil website where I write about math, computer graphics, and perhaps even other things</h4>
     </TitleBox>
     <MainBox>
         <h2>Posts</h2>
-        {#each data.posts as post}
-            <PostCard {post} />
-        {/each}
+        <table class="table">
+            <tbody>
+                {#each data.posts as post}
+                    <PostCard {post} />
+                {/each}
+            </tbody>
+        </table>
     </MainBox>
     <MainBox>
         <h2 class="mb-2">Other Stuff</h2>

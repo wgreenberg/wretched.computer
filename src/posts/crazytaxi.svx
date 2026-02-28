@@ -1,8 +1,8 @@
 ---
 title: Reverse Engineering Crazy Taxi, Part 1
-description: For some reason I put Crazy Taxi into the browser and You Can Too
-date: 2/16/2026
-published: false
+description: For some reason I put Crazy Taxi's levels into the browser and You Can Too
+date: 2/28/2026
+published: true
 ---
 
 <script>
@@ -12,23 +12,23 @@ published: false
     import Table from "$lib/components/Table.svelte";
 </script>
 
-From time to time, and usually in the winter, a certain madness takes hold of me. Cooped up indoors from nasty weather and depressing grey vistas, I'll sink my teeth into an unreasonably sized engineering task and usually not let go for months. My friends have dubbed this my [strange moods](https://dwarffortresswiki.org/index.php/Strange_mood), named after a phenomenon in the game Dwarf Fortress where dwarves will stop whatever they are doing and pursue the construction of some ornate artifact, usually to the exclusion of everything else.
-
 <video controls preload="metadata">
     <source src="/videos/crazytaxi/flythrough.mp4#t=0.1" type="video/mp4" />
 </video>
 
-This year, my winter madness project was adding the classic game Crazy Taxi to [noclip.website](https://noclip.website), my friend [Jasper's](https://www.youtube.com/@JasperRLZ) insanely cool and ambitious "digital museum of video game levels". You can [click here](https://noclip.website/#crazytaxi/dc1) to check it out (ideally on a computer, mobile support is spotty), and use WASD and your mouse to freely fly around the levels of the game.
+From time to time, and usually in the winter, a certain madness takes hold of me. Cooped up indoors from nasty weather and depressing grey vistas, I'll sink my teeth into an unreasonably sized engineering task and usually not let go for months. My friends have dubbed this my [strange moods](https://dwarffortresswiki.org/index.php/Strange_mood), named after a phenomenon in the game Dwarf Fortress where dwarves will stop whatever they are doing and pursue the construction of some ornate artifact, usually to the exclusion of everything else.
+
+This year, my winter madness project was adding the classic game Crazy Taxi to [noclip.website](https://noclip.website), my friend [Jasper's](https://www.youtube.com/@JasperRLZ) incredibly cool and ambitious "digital museum of video game levels". You can [click here](https://noclip.website/#crazytaxi/dc1) to check it out (on a computer works best, though mobile support is OK), and use WASD and your mouse to freely fly around the levels of the game. The mouse wheel adjusts camera speed, and holding shift lets you go double speed.
 
 But before we dig into Crazy Taxi, first I'd like to harp on why noclip.website is such a fascinating project. At a base level, it allows users to freely explore 3D recreations of hundreds of maps from dozens of video games ranging from the N64 era to relatively modern PC games, all in the browser. This alone is very impressive, but what makes it truly a _museum_ is that its codebase represents an [open source recreation of each of those games' original rendering methods](https://github.com/magcius/noclip.website/).
 
-That's because Jasper requires each game's renderer to operate using just the game's original files; no Blender exports, no pre-processing with modding tools, just rendering the game from its original files quickly enough to run in a browser. This means that adding a game to noclip involves effectively reverse engineering and recreating major portions of that game's code, from custom parsers for bespoke file formats, to rendering loops which often resemble the original game engine, to occasionally recreating parts of the game's AI and mechanics (seriously, check out the Bullet Bills in Super Mario Galaxy's [Buoy Base Galaxy](https://noclip.website/#smg/OceanFloaterLandGalaxy) level; you might just find an easter egg).
+That's because Jasper requires each game's renderer to operate using just the game's original files; no Blender exports, no pre-processing with modding tools, just rendering the game from its original files, and quickly enough to run in a browser. This means that adding a game to noclip involves reverse engineering and recreating major portions of that game's code, from custom parsers for bespoke file formats, to rendering loops which often resemble the original game engine, to occasionally recreating parts of the game's AI and mechanics (seriously, check out the Bullet Bills in Super Mario Galaxy's [Buoy Base Galaxy](https://noclip.website/#smg/OceanFloaterLandGalaxy) level; you might just find an easter egg).
 
-So before we move on, I highly recommend taking a minute to explore the various games and levels on noclip. There's a seriously good chance that the site has at least one game you adore, and getting to freely fly around the 3D spaces you might've last experienced as a child is an amazing experience. It should also hopefully communicate the scope of what adding a game to the site entails!
+So before we move on, I highly recommend taking a minute to explore the various games and levels on noclip. There's a seriously good chance that the site has at least one game you adore, and getting to freely fly around the 3D spaces you might've last experienced as a child is a delightful experience. It should also hopefully communicate the scope of what adding a game to the site entails!
 
 ## What were we talking about again
 
-Back to my winter madness. In previous years I contributed two fairly large games to noclip, [_Halo_](https://noclip.website/#Halo/bloodgulch) and [_World of Warcraft_](https://noclip.website/#WorldOfWarcraft/Warsong%20Gulch-790291), so I was fairly familiar with the process of reverse engineering a game and writing a renderer for it. However, for both of those games there already existed substantial modding communities and copious amounts of technical documentation for how the games worked, down to detailed byte-level diagrams of each file format. This made it more approachable (though definitely not _easy_) to write those games' renderers, and I owe those communities a huge debt of gratitude for their documentation efforts.
+Back to my winter madness. In previous years I contributed two fairly large games to noclip, [_Halo_](https://noclip.website/#Halo/bloodgulch) and [_World of Warcraft_](https://noclip.website/#WorldOfWarcraft/Warsong%20Gulch-790291) (I posted a [retrospective on the WoW renderer](https://bsky.app/profile/wretched.computer/post/3lpb7lzq72s2r) as a thread on Bluesky), so I was fairly familiar with the process of reverse engineering a game and writing a renderer for it. However, for both of those games there already existed substantial modding communities and copious amounts of technical documentation for how the games worked, down to detailed byte-level diagrams of each file format. This made it more approachable (though definitely not _easy_) to write those games' renderers, and I owe those communities a huge debt of gratitude for their documentation efforts.
 
 But this year, I wanted to try something new: I decided I'd add a game to noclip that wasn't already understood, didn't already have the secrets of its file formats neatly displayed on a community wiki, and that didn't have any tools already for viewing its maps. And, thanks largely to my recent acquisition of a [Flippy Drive](https://www.crowdsupply.com/team-offbroadway/flippydrive) for my GameCube, I recently became re-enamored with Crazy Taxi, and thus my fate was sealed.
 
@@ -38,20 +38,20 @@ And so, this series of blog posts is going to be a whirlwind tour of how I rever
 
 So, you've decided to reverse engineer Crazy Taxi. That's great! But _which version_ of Crazy Taxi are we talking about? After all, the game was first released for arcade cabinets in 1999, then was ported to the Sega Dreamcast in 2000, then to Sony PlayStation 2 and Nintendo GameCube in 2001, then to the PC in 2002, then to iOS in 2012, and Android in 2013. Many of these ports were done by different studios and use different proprietary file formats, engines, and were written for totally different computer architectures.
 
-Because I'd been playing the GameCube version of the game, and since Jasper has developed something of a toolkit for GameCube games on noclip, I was naturally inclined towards that version. However, as Jasper pointed out, the Android version was apparently shipped with its [debug symbols](https://en.wikipedia.org/wiki/Debug_symbol), which would make reverse engineering it substantially easier. And while this Android version may prove useful to us later, it was the GameCube version that I ended up opting for, so I acquired a disc image ROM of the game.
+Because I'd been playing the GameCube version of the game, and since Jasper has developed something of a toolkit for GameCube games on noclip, I was naturally inclined towards that version. However, as Jasper pointed out, the Android version had apparently shipped with its [debug symbols](https://en.wikipedia.org/wiki/Debug_symbol), which would make reverse engineering it substantially easier. And while this Android version may prove useful to us later, it was the GameCube version that I ended up opting for, so I acquired a disc image ROM of the game.
 
 ## Tools of the trade
 
 Let's take a second to talk about our tools. While I'm by no means prescriptive of this, there are some tools that are pretty standard for reverse engineering for good reason:
 
-* A hex editor. Whenever you're working files containing unknown data, a hex editor is absolutely crucial. In fact, it's so important to this process that I ended up writing a custom one for use in this post! For this project, I used [ImHex](https://imhex.werwolv.net), but any editor that allows previewing common datatypes will do.
-* [Dolphin, the GameCube and Wii emulator](https://dolphin-emu.org). As you might expect, being able to actually play the game and see levels will be invaluable as it provides us with a ground truth to compare our renderer against. But Dolphin actually provides us with an bunch of other very useful tooling. It can extract ROMs into their constitutent files, has a fairly decent debugger complete with breakpoints, and it has an incredibly useful set of tools for analyzing the graphical instructions sent to the emulated GameCube's GPU.
+* A hex editor. Whenever you're working files containing unknown data, a hex editor is absolutely crucial. In fact, it's so important to this process that I ended up writing a custom one for use in this post! These days I use [ImHex](https://imhex.werwolv.net), but any editor that allows previewing common datatypes will do.
+* [Dolphin, the GameCube and Wii emulator](https://dolphin-emu.org). As you might expect, being able to actually play the game and see levels will be invaluable as it provides us with a ground truth to compare our renderer against. But Dolphin actually provides us with an bunch of other very useful tooling: it can extract ROMs into their constitutent files, has a fairly decent debugger complete with breakpoints, and it has an incredibly useful set of tools for analyzing the graphical instructions sent to the emulated GameCube's GPU.
 * A disassembler/decompiler. I used [Ghidra](https://github.com/NationalSecurityAgency/ghidra) for this project since, despite being developed by a greatly reviled three-letter-agency, it _is_ free and has a good deal of documentation available. Tools like Ghidra allow us to incrementally study, annotate, and eventually understand the assembly language baked into the game's binary.
-* And lastly, noclip.website itself. Jasper has built up an insanely versatile 3D graphics toolkit in this project, and being able to visualize the data we're extracting from Crazy Taxi in 3D space allows us to quickly test our assumptions as we're navigating a ton of unknowns. As you'll see, before I even nailed down many of the models and textures of the game, I was able to use noclip to visualize data found in the binary, helping me draw conclusions on how the game was laid out.
+* And lastly, noclip.website itself. Jasper has built up a very versatile 3D graphics toolkit in this project, and being able to visualize the data we're extracting from Crazy Taxi in 3D space allows us to quickly test our assumptions as we're navigating a ton of unknowns. As you'll see, before I even nailed down many of the models and textures of the game, I was able to use noclip to visualize data found in the binary, helping me draw conclusions on how the game was laid out.
 
 ## A lay of the land
 
-At last, we're ready to start looking at some bytes. The Crazy Taxi ROM I have, `Crazy Taxi (USA).rvz`, is about 90MB, which is considerably smaller than the average GameCube ROM at 1.4GB. While I could load this up into a hex editor and get to sleuthin', I happen to already know that `.rvz` is a file format used by the Dolphin project as a more compact alternative to `.iso`, another disc image format. And luckily, Dolphin has tools for opening and extracting these: set the ROM's directory as Dolphin's game directory, right-click on the game and select Properties, then click on the Filesystem tab:
+At last, we're ready to start looking at some bytes. The Crazy Taxi ROM I have, `Crazy Taxi (USA).rvz`, is about 90MB, which is considerably smaller than the average GameCube ROM at 1.4GB. While I could load this up into a hex editor and get to sleuthin', I happen to already know that `.rvz` is a file format used by the Dolphin project as a more compact alternative to `.iso`, another disc image format. And luckily, Dolphin has a way to open and extract these: set the ROM's directory as Dolphin's game directory, right-click on the game and select Properties, then click on the Filesystem tab:
 
 ![Dolphin's Filesystem view](/images/crazy-taxi/dolphin-filesystem.png)
 
@@ -147,45 +147,54 @@ These `.all` files look the most promising to me, though, since they comprise th
 
 ## All's well that ends `.all`
 
-`.all` as an extension name is pretty vague, but based on the wide variety of filenames using it (e.g. `voices.all`, `texDC0.all`, `polDC0.all`), we might guess it's some sort of general purpose file format. Here's the first couple hundred bytes of the smallest of these, `files/ct/poldc3.all`:
+`.all` as an extension name is pretty vague, but based on the wide variety of filenames using it (e.g. `voices.all`, `texDC0.all`, `polDC0.all`), we might infer that it's general purpose enough to be used for many different kinds of data. Here's the first couple hundred bytes of the smallest of these, `files/ct/poldc3.all`:
 
-<HexEditor title="poldc3.all" data={CTData.poldc3_0_576} />
+<HexEditor file={CTData.poldc3Header} />
 
-If you've never looked at data in a hex editor before, here's a quick tour of what what we're looking at. In the middle, we have the file contents of `poldc3.all` in hexadecimal form, followed by an ASCII representation of the same data (with a dim grey `.` representing unprintable ASCII characters). Running down the left column are the file offsets into `poldc3.all` where each line of bytes occurs. And on the bottom, we have a panel which shows different interpretations of the currently selected data: as signed & unsigned integers of various bit lengths, and as a 16-bit and 32-bit floating point numbers. Finally, there's a toggle on whether to interpret the data as [big-endian or little-endian](https://en.wikipedia.org/wiki/Endianness). You can click on any byte (or ASCII character) to select a 4-byte sequence for interpretation.
+If you've never looked at data in a hex editor before, here's a quick tour of what what we're looking at:
+* In the middle, we the first couple hundred bytes of `poldc3.all` in hexadecimal form. If you're unused to reading hexadecimal data, every two characters like `A2` represents a single byte of data.
+* To its right is an [ASCII](https://en.wikipedia.org/wiki/ASCII) representation of the same data, with a dim grey `.` representing non-alphanumeric or otherwise printable characters. Its purpose is to allow readers to quickly scan for human-readable strings in a sea of binary data.
+* Running down the left column are the file offsets into `poldc3.all` where each line of bytes occurs.
+* On the bottom, we have a panel which shows different interpretations of the currently selected data: as signed & unsigned integers of various bit lengths, and as a 16-bit and 32-bit floating point numbers.
+* Finally, there's a toggle on whether to interpret the data as [big-endian or little-endian](https://en.wikipedia.org/wiki/Endianness). You can click on any byte (or ASCII character) to select a 4-byte sequence for interpretation.
 
 Something that's immediately evident here is there appear to be filenames of `.shp` files at regular intervals, along with some other non-ASCII values. If you click around the editor, you can get a sense of what these values might represent, even if we don't yet know their actual format. For example, assuming little-endian values (I'll get back to endianness in a second), the first value looks like it's almost certainly the integer `7` since the floating point values are way too small to be likely candidates. And, wouldn't you know it, there happen to be 7 filenames following it, followed by some data that seems to break from the pattern. This hints us towards a first testable theory about the file: **the first number in an `.all` file might represent how many filenames follow it**.
 
-As for which endianness to choose, there's a long and a short answer here. The short answer is I usually toggle between the two until values start looking "reasonable", i.e. values around the order of magnitude I'd expect for a game. Let's save the long answer for later, since this will come up again soon, but for now we'll stick with little-endian since that seems to work best for this data.
+Building theories and testing them is at the core of reverse engineering, and now that we have one, I'd like to emphasize the first (and perhaps most important) lesson I've learned in my time reversing: **take detailed notes of your observations, your theories, and your assumptions**. I can't tell you how many times I've wished that I'd written down a suspicious byte offset, or noted why I assumed some value was constant, or recorded some other little detail I'd stumbled upon hours earlier. Taking detailed notes not only helped me get Crazy Taxi into the browser, but it also allowed me to recount the story of my reversing for this very blog post.
+
+As for which endianness to choose, there's a long and a short answer here. The short answer is I usually toggle between the two until values start looking "reasonable", i.e. are around the order of magnitude I'd expect in that context. Let's save the long answer for later, since this will come up again soon, but for now we'll stick with little-endian since that seems to work best for this data.
 
 ## A sample size of 1
 
 Back to our theory about the first number. To see if it holds any water, let's check out the first kilobyte or so of another relatively small `.all` file, `files/ct/sprCENG.all`:
 
-<HexEditor title="sprCENG.all" data={CTData.sprCENG_0_1456 } />
+<HexEditor file={CTData.sprCENGHeader} />
 
 Once again, we have a pretty unambigious integer value starting at the first byte, and this time it's `0x13`, or 19 in decimal, which again matches the number of strings we see immediately following it. That said, we still aren't sure whether that first integer is 8 bits, 16 bits, or 32 bits long. But a pattern is definitely emerging! Checking a few more files, I see this pattern holds even for very large `.all`s, and also notice that the first four bytes is never occupied with anything except for this integer value. This leads me to update our theory: **the first four bytes is an unsigned 32-bit (4-byte) integer representing the number of filenames following it**.
 
 ## An archive of our own
 
-At this point, because I've reverse engineered a number of file formats before, I've also made a guess as to the purpose of `.all` files: **they represent some kind of _archive_ file that can contain a number of other named files**, sort of like a tarball.
+At this point, because I've reverse engineered a number of file formats before, I've also made a guess as to the purpose of `.all` files: **they represent some kind of _archive_ file that can contain a number of other named files**, sort of like a [tarball](https://en.wikipedia.org/wiki/Tar_(computing)).
 
 Archive files are common in video games for the same reason they're common in lots of contexts where many files are read: I/O is expensive! If you can frontload operations that take a long time, like loading a bunch of related files from a spinning disc, it's easier to guarantee reliably fast operations on that data later. And importantly, archive file formats tend to start with some kind of table of contents which lists their constituent files, as well as some info on where to find them, such as offsets to their start/end, or their length. Since that seems to be what we're looking at, let's see if we can determine the format of our table of contents.
 
 Looking at our two example `.all`s, we can see that after the first four bytes the same pattern of values occurs: <ByteSpan data={[0x20, 0x00, 0x41, 0x00]} />, followed by 8 null bytes. Checking a bunch of other `.all`s, it seems they all share this pattern, so it doesn't seem to vary based on the number of filenames or any other factor. Since they seem to be constant, let's ignore them for now. Finally, at offset `0x10`, we see our first filename.
 
-Now, for `sprCENG.all`, we know our archive contains 19 files, so in addition to the 19 filenames, we'd also expect to find that many values describing how to find them. These values might be interleaved with the filenames, or might be listed as their own contiguous array. Looking at our data, there _is_ a suspicious non-ASCII value that's interleaved between filenames, so I think we're looking at an array of filename/value pairs. And when we have an array of structures like this, a good first step is to figure out whether the elements are of fixed or variable length.
+Now for `sprCENG.all`, we know our archive contains 19 files, so in addition to the 19 filenames, we'd also expect to find that many values describing how to find them. These values might be interleaved with the filenames, or might be listed as their own contiguous array. Looking at our data, there _is_ a suspicious non-ASCII value that's interleaved between filenames, so I think we're looking at an array of filename/value pairs. And when we have an array of structures like this, a good first step is to figure out whether the elements are of fixed or variable length.
 
-If they were variable length, we'd expect to see another integer value describing how long each item is, but I don't see anything like that. Instead, just eyeballing the data, it looks like these items are all the same length!
+If they were variable length, we'd expect to see each pair prefixed with an integer value describing how long each item is, since when the game is reading this file, at some point it needs to know how many bytes to read per pair. But I don't see any numbers close to the sizes of these pairs (which are just a few dozen bytes long), and just eyeballing the data, it instead looks like these items are all the same length!
 
-To find that fixed length, just try counting the number of bytes from the start of the first filename (`ST_mode_s_eng01.tex`) to the start of the second (`ST_mode_s_eng01b.tex`): 68 bytes. And, indeed, checking the distance from the second to the third filename is _also_ 68 bytes. Seems we have another theory: **each table of contents item is 68 bytes long**.
+To find that fixed length, just try counting the number of bytes from the start of the first filename (`ST_mode_s_eng01.tex`) to the start of the second (`ST_mode_s_eng01b.tex`). If we do that, we get 68 bytes, and indeed, checking the distance from the second to the third filename is _also_ 68 bytes. Seems we have another theory: **each table of contents item is 68 bytes long**.
 
 ## Writing our first parser
 
-Looking at any 68 byte chunk, it seems there's not much going on besides the filename and the few non-ASCII bytes at the end. Similar to our analysis of the entire item, we might note that the strings don't have a length value associated with them, so let's assume they're also a fixed length of 64 bytes (i.e. all but the last 4 bytes). This would be consistent with a fairly common pattern when dealing with fixed-length blocks of data: they tend to have lengths that are powers of 2.
+Looking at any of our 68 byte chunks, there's not much going on besides the filename and the few non-ASCII bytes at the end. Similar to our analysis of the entire item, we might note that the filename strings don't have a length value before them, so let's assume they're also a fixed length: 64 bytes could work, since that'd account for all but the last 4 non-ASCII bytes. This would be consistent with a fairly common pattern when dealing with fixed-length blocks of data: they tend to have lengths that are powers of 2.
 
 With all this in mind, we now have enough of a working theory to write our first parser!
 
 This may feel premature, since we still don't know what half of these values are, and we haven't even touched the other 80% of the data in the file. But writing a parser, even an incomplete one, is a crucial step towards testing the theories we have so far, and running it on our entire set of data will tell us much more than eyeballing the data ever could.
+
+This brings us to another important lesson I've learned while reverse engineering: **as early as humanly possible, test your theories with actual code**. I can't tell you how much time I've wasted by working based on untested assumptions, only to find out they were wrong hours later.
 
 So, let's codify what we suspect about the `.all` format into some pseudocode structs:
 
@@ -204,7 +213,7 @@ struct TableOfContentsEntry {
 }
 ```
 
-If you're unfamiliar with C-like struct syntax, what we're describing here is the layout of our file's data. You can see we've placed the 4-byte unsigned int number of filenames at the start, followed by our as-yet unknown <ByteSpan data={[0x20, 0x00, 0x41, 0x00]} /> sequence followed by 8 null bytes, and then an array of our filename/number pair structs.
+If you're unfamiliar with C-like struct syntax, what we're describing here is the layout of our file's data. You can see we've placed the number of filenames at the start as a 4-byte unsigned integer, followed by our as-yet unknown <ByteSpan data={[0x20, 0x00, 0x41, 0x00]} /> sequence followed by 8 null bytes, and then an array of our filename/number pair structs.
 
 Also, note that even though we don't know what many of these fields are, we've still given them types and placeholder names which we can update later as we learn more.
 
@@ -230,13 +239,13 @@ pub struct TableOfContentsEntry {
 
 From this, `deku` generates a parser implementation, allowing me to simply call something like `ArchiveHeader::from_bytes(data)` to parse the entire header.
 
-Finally, we can test our theory by simply running the parser on every `.all` file we've got. As it turns out, it prints out exactly what we'd expect with no panics! But you can imagine how if we saw some garbage characters in `filename`, or parsed a value of `12,000,000` for `n_items`, that might indicate we've gone astray somewhere. This brings us to a really significant lesson I've learned while reverse engineering: **as early as humanly possible, test your theories with actual code**. I can't tell you how much time I've wasted by working based on untested assumptions, only to find out they were wrong hours later.
+Finally, we can test our theory by simply running the parser on every `.all` file we've got. As it turns out, it prints out exactly what we'd expect with no panics! But you can imagine how if we saw some garbage characters in `filename`, or parsed a value of `12,000,000` for `n_items`, that might indicate we've gone astray somewhere.
 
 ## `unk` status
 
 Anyway, since it seems we're on the right track, let's figure out what the `unk0` field in `TableOfContentsEntry` represents by taking another look at `poldc3.all`:
 
-<HexEditor title="poldc3.all" data={CTData.poldc3_0_576} />
+<HexEditor file={CTData.poldc3Header} />
 
 Recall that a table of contents entry should either include either an offset to the data start, the size of the data, or possibly both. Using our parser, let's print out what each of the 7 `TableOfContentsEntry` values are:
 
@@ -278,23 +287,25 @@ We're off by... just 20 bytes??? Clearly something in our theory is wrong, which
 
 My first thought when dealing with this gap was to revisit our `ArchiveHeader` struct to see if I missed an "offset to the start of the actual data" type value. Finding nothing, I instead took a closer look at the end of `poldc3.all`s header data. At the end of our `TableOfContentsEntry` list, at offset `0x1E8`, we see `triangle_12.shp`s `unk0` value of <ByteSpan data={[0x40, 0x02, 0x00, 0x00]} />. Then, we see exactly _20 more null bytes_ before the first non-null data appears again.
 
-Although this looks very promising, it might just be a coincidence, and we need more information to identify whether it's a pattern.
+This empty data, often called padding, looks like a very promising candidate for our 20 byte gap. But before we go adding a 20 byte padding field to the end of our header struct, we need some more information about data after the header to write an effective test.
 
 ## The `.shp` of things to come
 
-First, it would help if we knew what data a `.shp` file is supposed to start with, since that would help us find any other gaps between `.shp` file data. Although the first couple bytes of our `.all` archives represent the number of files they contain, and thus can vary from archive to archive, it's fairly common for file formats to start with the same constant value for ease of identification. This is often called a file's [magic number](https://en.wikipedia.org/wiki/File_format#Magic_number), and is a great heuristic for identifying what a random blob of data might represent.
+Since `poldc3.all` contains just `.shp` file data, it'd help if we knew what data a `.shp` file is supposed to start with, since that'd let us write a test that ensured our parsed header always ended right before the first `.shp` file started.
+
+Knowing how a file format is supposed to start can be a great heuristic when reverseing. Although the first couple bytes of our `.all` archives represent the number of files they contain, and thus can vary from archive to archive, it's actually fairly common for file formats to start with the same constant value for ease of identification. This is often called a file's [magic number](https://en.wikipedia.org/wiki/File_format#Magic_number).
 
 Luckily, we have a single loose `.shp` specimen from our extracted ROM to compare against: `files/ct/cube0.shp`, and it's small enough that I can include it in its entirety here:
 
-<HexEditor title="cube0.shp" data={CTData.cube0_shp} littleEndian={false} />
+<HexEditor file={CTData.cube0Shp} littleEndian={false} />
 
-Now there's plenty of interesting bits in here, and we'll be revisiting this file in much greater detail in a later post, but for now just take note of the first 4 bytes of the file. When Jasper saw this, he said something along the lines of "ah <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} />, what a classic," as if he were greeting an old friend, to which I very reasonably replied asking what the hell he was talking about.
+Now there's plenty of interesting bits in here, and we'll be revisiting this file in much greater detail in the next post, but for now just take note of the first 4 bytes of the file, <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} />. When Jasper saw this, he said something along the lines of "ah <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} />, what a classic," as if he were greeting an old friend, to which I very reasonably replied asking what the hell he was talking about.
 
-Read as a _big endian_ 32 bit floating point number, <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} /> is `1.0`, which is a value that comes up _a lot_ in game data. Having spent years doing this, Jasper identified it immediately and guessed that since it was at the start of the file, this might represent a version number for the `.shp` file format, which could give us a great candidate for a magic number to look for.
+Read as a _big_ endian 32 bit floating point number, <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} /> is `1.0`, which is a value that comes up _a lot_ in game data. Having spent years doing this, Jasper identified it immediately and guessed that since it was at the start of the file, this might represent a version number for the `.shp` file format, which could give us a great candidate for a magic number to look for.
 
-And yes, we have now switched to interpreting data as _big endian_ instead of little endian. To be honest, I don't have a great explanation for why the folks at Acclaim use little endian for their `.all` headers and big endian elsewhere. I do know that GameCube runs on a PowerPC architecture, which is big endian, but that doesn't explain why the `.all` headers are little. Jasper theorized that perhaps files that are meant to be marshalled directly into C structs were serialized as big endian, while data that was meant to be parsed incrementally like the `.all` header is little, but unfortunately we just have to roll with the punches on this one.
+And yes, we have now switched to interpreting data as _big_ endian instead of _little_ endian. To be honest, I don't have a great explanation for why the folks at Acclaim use little endian for their `.all` headers and big endian elsewhere. I do know that GameCube runs on a PowerPC architecture, which is big endian, but that doesn't explain why the `.all` headers are little. Jasper theorized that perhaps files that are meant to be marshalled directly into C structs were serialized as big endian, while data that was meant to be parsed incrementally like the `.all` header is little, but unfortunately we just have to roll with the punches on this one.
 
-Now, if we revisit `poldc0.all`, sure enough the very first non-null sequence of bytes after the end of our header is <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} /> at offset `0x200`. And while I only include the first couple hundred bytes in this post's hex editor, if you were able to advance 492 bytes forward from there (which, you may recall, corresponds to the length of our first `TableOfContentsEntry`), you'd end up on _another_ <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} /> value. This pattern of advancing by the `unk0` value and landing on another f32 `1.0` value holds for the rest of the file.
+Now, if we revisit `poldc3.all`, sure enough the very first non-null sequence of bytes after the end of our header is <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} /> at offset `0x200`. And while I only include the first couple hundred bytes in this post's hex editor, if you were able to advance 492 bytes forward from there (which, you may recall, corresponds to the length of our first `TableOfContentsEntry`), you'd end up on _another_ <ByteSpan data={[0x3f, 0x80, 0x00, 0x00]} /> value. This pattern of advancing by the `unk0` value and landing on another f32 `1.0` value holds for the rest of the file.
 
 So this tells us that after the first 20 byte gap, it seems that all of `poldc0.all` files are contiguous, and their sizes are described by `unk0`. At this point, even if we're not totally sure about the 20 byte gap, I think we can safely rename `TableOfContentsEntry.unk0` to `TableOfContentsEntry.file_size`.
 
@@ -328,7 +339,7 @@ Since we only have a good handle on the `.shp` headers right now, let's instead 
 
 It turns out the gap varies considerably, ranging from 0 bytes to 28. This is interesting, but what stood out to me were the offsets where the first `1.0` occurs. Note that they always end in a `0`, unlike the offsets to the end of our `ArchiveHeader`. This means that their offset are always multiples of `0x10`, or 16! And if you look a bit more closely, you might notice their 2nd digits are always even -- this implies they're actually all multiples of `0x20`, or 32. This may seem like a subtle or arbitrary observation, but it's actually a very common pattern when laying out data called [_alignment_](https://en.wikipedia.org/wiki/Data_structure_alignment#Definitions).
 
-Data is often aligned to multiples of some number of bytes, sometimes referred to as its alignment boundary. This happens for a number of reasons depending on the application, but generally it's to improve runtime performance at the expense of storage size. In this case, it's hard to say exactly why the data is aligned to `0x20` byte boundaries, but it's possible it's due to the GameCube's cache size.
+Data is often aligned to multiples of some number of bytes, sometimes referred to as its alignment boundary. This happens for a number of reasons depending on the application, but generally it's to improve runtime performance at the expense of storage size. In this case, it's hard to say exactly why the data is aligned to `0x20` byte boundaries, but it's possibly due to the GameCube's cache size.
 
 With this observation, we can make a final theory about how `.all` files are formatted: **each archived file's data is together starting at the nearest `0x20` byte boundary following the header**.
 
@@ -336,16 +347,16 @@ With this observation, we can make a final theory about how `.all` files are for
 
 Now at last, using the theories we've built up so far, we can write some pseudocode that extracts files from an `.all` archive, and dumps the constituent files into a directory with the same name:
 
-```
+```python
 archive_data = read_file(archive_name)
-// parse the header
+# parse the header
 header = ArchiveHeader.parse(archive_data)
-// advance to the end of the header section
+# advance to the end of the header section
 pos = sizeof(header)
-// align to the nearest 0x20 byte boundary
+# align to the nearest 0x20 byte boundary
 if pos % 0x20 != 0:
     pos += 0x20 - (pos % 0x20)
-// read off each file's data
+# read off each file's data
 for entry in header.toc:
     start = pos
     end = pos + entry.file_size

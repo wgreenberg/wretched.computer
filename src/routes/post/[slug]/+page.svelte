@@ -14,11 +14,11 @@
     }
 </script>
 
-<main class="flex justify-stretch items-center flex-col mb-20">
+<main class="flex items-center justify-stretch flex-col mb-20">
     <TitleBox>
-        <h1 class="text-center font-serif">{data.metadata.title}</h1>
-        <p>{data.metadata.description}</p>
-        <h3 class="text-center font-serif">{dateToString(data.metadata.date)}</h3>
+        <p class="text-sm font-serif m-1">{dateToString(data.metadata.date)}</p>
+        <h2 class="text-center font-serif m-1">{data.metadata.title}</h2>
+        <h4 class="m-1 text-center italic w-4/5">{data.metadata.description}</h4>
     </TitleBox>
     <MainBox>
         {@render data.content()}
