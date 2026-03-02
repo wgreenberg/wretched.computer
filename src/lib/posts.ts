@@ -1,3 +1,4 @@
+import { SITE_CONFIG } from "$lib";
 
 export interface Post {
     slug: string;
@@ -6,6 +7,10 @@ export interface Post {
     description: string;
     date: Date;
     published: boolean;
+}
+
+export function getAbsolutePostUrl(post: Post): string {
+    return `${SITE_CONFIG.url}/${getPostPath(post)}`;
 }
 
 export function getPostPath(post: Post): string {
