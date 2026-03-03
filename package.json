@@ -43,6 +43,8 @@
 		"vitest": "^2.0.4"
 	},
 	"dependencies": {
-		"@tailwindcss/typography": "^0.5.15"
+		"@tailwindcss/typography": "^0.5.15",
+		"gl-matrix": "^3.4.4",
+		"svelte-canvas": "^2.1.0"
 	}
 }

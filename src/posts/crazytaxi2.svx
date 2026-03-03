@@ -1,0 +1,48 @@
+---
+title: Reverse Engineering Crazy Taxi, Part 2
+description: Turning `.shp` files into Pizza Huts
+date: 2/16/2026
+published: false
+---
+
+<script>
+    import Rasterizer from "$lib/posts/crazy-taxi2/Rasterizer.svelte";
+    import ObjViewer from "$lib/posts/crazy-taxi2/ObjViewer.svelte";
+</script>
+
+This is the second of a series of posts detailing how I put the entirety of Crazy Taxi's levels onto the web. If you haven't read the [first post](/post/crazytaxi), I'd highly recommend it, since this builds off many of the ideas developed there.
+
+In part 1, we covered some basic elements of reverse engineering in order to decode Crazy Taxi's `.all` file format, which ended up being an archive format used to bundle thousands of files of game data. I also stressed a couple lessons I've learned while reverse engineering, which I'll go ahead and recap here:
+
+1. **Take detailed notes as you're reversing.** You never know when that random offset you noticed 2 hours ago will come in handy again.
+2. **As early as possible, test your theories with actual code.** Writing a quick script that checks your assumption across hundreds of files will save you tons of time compared to manually scanning, and that code can serve as a testbed for further discovery and theorizing.
+
+In this post, we'll build on these lessons with a couple new techniques in order to puzzle out the `.shp` file format, which we suspect might have something to do with the game's 3D models.
+
+## What's in a name?
+
+But why do we think `.shp` files have to do with models? Well for one, `.shp` looks a lot like the word "shape", doesn't it? Admittedly, this is fairly weak evidence by itself, but it was enough to give me my initial hunch, and luckily it was bolstered by a number of other observations:
+
+* Prior to expanding the `.all` archives, the only `.shp` file is called `cube0.shp` (cubes famously being a kind of shape), and it seemed roughly about the size I'd expect for a cube's geometry (i.e. small)
+* Besides `cube0.sh`, all the other `.shp` files live in `.all` archives with names like `polDC0.all`, `polDC1.all`, etc., whose prefix `pol` kinda suggests the word "polygon"
+* The 2,744 `.shp` files within those archives have names like `CZ_train_B.shp`, `course_4_129.shp`, `CZ_IMPALA.shp`, which all seem like reasonable names for game models
+
+Running with the "`.shp` == shape" theory, and assuming `cube0.shp` indeed represented a cube's geometry in this format, analyzing it seemed like a great first step to cracking this nut.
+
+## Rosetta Cube
+
+Cubes, as you might know, are pretty simple shapes. And after the humble triangle, they're typically the first thing you draw to the screen when writing a renderer or game engine. So the fact that the developers at Acclaim dropped what appears to be a cube written in their proprietary format into our lap makes it something like a Rosetta Stone, since although we certainly don't know what makes a `.shp` file tick, we do know what to expect from a dang cube.
+
+Now there are many ways to represent a cube in 3D space, but to inform our investigation into the `.shp` file, let's review the standard elements used to store 3D geometry in video games using a well-known, plaintext file format: the [Wavefront .obj file](https://en.wikipedia.org/wiki/Wavefront_.obj_file). Since they're plaintext, `.obj` files are pretty inefficient in terms of filesize, but their simplicity and ease of editing have made them so prolific that even macOS includes a builtin renderer for them in its Finder preview window.
+
+![Previewing a cube using macOS Finder](/images/crazy-taxi/cube.png)
+
+You certainly don't need to become an expert in `.obj` files to understand the rest of this post, but it'll be useful to go over the types of data they can store since they're pretty universally used across other 3D geometry file formats. In `.obj` files, all data is stored as separate plaintext lines, prefixed by one or two letters to indicate the type of data it is. For our purposes, we'll only focus on three of these:
+* Vertices: A vertex starts with a `v` and is followed by the $x$, $y$, and $z$ coordinates of that vertex. Naturally, these represent the 3D points in space that make up our shape.
+* Vertex normals: A [vertex normal](https://en.wikipedia.org/wiki/Vertex_normal) starts with `vn` and is also followed by $x$, $y$, and $z$ coordinates. These define a _vector_ (math's version of an arrow) rather than a point in space, and can be somewhat counterintuitive if you haven't dealt with them before. tl;dr they're a concise way to associate a flat surface with any of the vertices defined above, and are especially useful when lighting a 3D object.
+    * A visualization I find helpful for normals is this: think of a flat piece of plywood resting on a marble -- the plywood can wobble around the marble freely, but there's only 1 orientation of the plywood that'll cause it to face you. In this example, the marble is the vertex, the arrow from the marble to you is the vertex normal, and the plywood is the surface defined by those two elements.
+* Face elements: a face starts with `f` and is followed by 3 values which describe a triangle. You may have heard that all 3D graphics is composed of triangles? Well, here they are. These can come in a couple different formats, but for our purposes, they'll look like this: `f a//m b//n c//o` where `a` `b` and `c` are _vertex indices_ (i.e. an index into the list of vertices defined above) and `m` `n` and `o` are _vertex normal indices_ (ditto for the normals defined above).
+
+With these elements, we can render our 3D cube! To illustrate this (and the `.obj` format generally), I put together a little visualizer that highlights how each line in the `.obj` file maps to the rendered cube. Mouse over (or tap on) any of the lines below to see how it's represented in 3D space.
+
+<ObjViewer />
