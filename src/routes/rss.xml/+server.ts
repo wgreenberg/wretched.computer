@@ -1,5 +1,6 @@
 import { SITE_CONFIG } from '$lib/index'
 import { getAbsolutePostUrl, getPosts, type Post } from '$lib/posts'
+export const prerender = true;
 
 export async function GET({ fetch }) {
     const posts: Post[] = await getPosts();
