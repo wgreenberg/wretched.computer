@@ -10,7 +10,6 @@ published: true
     import Calculator from "$lib/posts/arcs-dice/Calculator.svelte";
     import katex from 'katex';
 
-    // shorthand for rendering latex
     function l(s) {
         return katex.renderToString(s);
     }
