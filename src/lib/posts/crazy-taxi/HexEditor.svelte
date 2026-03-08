@@ -30,7 +30,7 @@ function isIndexHighlighted(i: number): boolean {
 }
 
 function getASCII(value: number): string | undefined {
-    if (value >= 33 && value <= 126) {
+    if (value >= 32 && value <= 126) {
         return String.fromCharCode(value);
     }
     return undefined;
@@ -112,7 +112,7 @@ function zeroPadHex(n: number, pad: number): string {
                         {@const color = isIndexHighlighted(i) ? 'bg-red-800' : ''}
                         {@const char = getASCII(file.data[i])}
                         {@const textColor = char === undefined ? 'text-gray-400' : 'text-white'}
-                        {@const spanClass = `${color} ${textColor}`}
+                        {@const spanClass = `whitespace-pre ${color} ${textColor}`}
                         {#if cellData !== undefined}
                             <button onclick={() => selectCell(i)}>
                                 <span class={spanClass}>{char === undefined ? '.' : char}</span>

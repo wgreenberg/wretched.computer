@@ -43,7 +43,7 @@
 	let animationId: number | null = $state(null);
 	let target: [number, number, number] = $state([0.5, 0.5, 0.5]);
 	let scratchVec3 = vec3.create();
-	let cameraRotRadsPerSecond = Math.PI / 8;
+	let cameraRotRadsPerSecond = Math.PI / 16;
 	let lastTs: number | null = null;
 
     let selectedPoints: number[] = $state([]);

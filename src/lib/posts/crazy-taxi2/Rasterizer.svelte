@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { vec3, mat4, vec4, vec2 }from 'gl-matrix';
+    import { vec3, mat4, vec4, vec2, mat3 }from 'gl-matrix';
 	import { Canvas, Layer, type Render } from 'svelte-canvas';
 
     let { height, width, camera, target, points, normals, tris, selectedNormals, selectedPoints, selectedTris }: {
@@ -97,7 +97,7 @@
         ctx.fillStyle = 'white';
         ctx.fillRect(0, 0, width, height);
 
-        vec3.scale(light, camera, 10);
+        vec3.scale(light, camera, 3);
 
         const viewFromModel = mat4.lookAt(scratchMat4A, camera, target, up);
         const normViewFromModel = mat4.invert(scratchMat4B, viewFromModel);
@@ -164,23 +164,13 @@
                 ctx.lineWidth = 1;
                 stroke = true;
             } else if (!isBackface) {
-                const radius = 100;
-                ctx.fillStyle = 'white';
-                ctx.fill();
-                for (const [vi, ni, v] of [[vi0, ni0, v0], [vi1, ni1, v1], [vi2, ni2, v2]]) {
-                    const lightDir = vec3.sub(scratchVec3D, points[vi - 1], light);
-                    vec3.normalize(lightDir, lightDir);
-                    vec3.scale(lightDir, lightDir, -1);
-                    const lighting = Math.max(255 * vec3.dot(normals[ni - 1], lightDir), 100);
-                    const lightResult = vec3.scale(scratchVec3E, lightColor, lighting);
-                    const grad = ctx.createRadialGradient(v[0], v[1], 0, v[0], v[1], radius);
-                    const color1 = `rgba(${lightResult[0]}, ${lightResult[1]}, ${lightResult[2]}, 100%)`;
-                    const color2 = `rgba(${lightResult[0]}, ${lightResult[1]}, ${lightResult[2]}, 0%)`;
-                    grad.addColorStop(0, color1);
-                    grad.addColorStop(1, color2);
-                    ctx.fillStyle = grad;
-                    ctx.fill();
-                }
+                const lightDir = vec3.sub(scratchVec3D, points[vi0 - 1], light);
+                vec3.normalize(lightDir, lightDir);
+                vec3.scale(lightDir, lightDir, -1);
+                const lighting = 255 * vec3.dot(normals[ni0 - 1], lightDir);
+                const lightResult = vec3.scale(vec3.create(), lightColor, lighting);
+                ctx.fillStyle = `rgba(${lightResult[0]}, ${lightResult[1]}, ${lightResult[2]}, 100%)`;
+                fill = true;
             }
 
             if (stroke) {
