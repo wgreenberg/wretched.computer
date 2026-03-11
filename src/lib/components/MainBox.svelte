@@ -2,6 +2,6 @@
     let { children } = $props();
 </script>
 
-<article class="prose prose-green shadow-s mt-5 pl-2 pr-2 mb-5 w-full">
+<article class="prose prose-green prose-code:before:content-none prose-code:after:content-none shadow-s mt-5 pl-2 pr-2 mb-5 w-full">
     {@render children()}
 </article>
