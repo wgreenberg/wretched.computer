@@ -13,6 +13,7 @@ published: false
     import FixedPointView from "$lib/posts/crazy-taxi/FixedPointView.svelte";
     import * as CTData from "$lib/posts/crazy-taxi/data.ts";
     import Table from "$lib/components/Table.svelte";
+    import Aside from "$lib/components/Aside.svelte";
 </script>
 
 This is the second of a series of posts detailing how I put interactive, [3D versions of Crazy Taxi's levels onto the web](https://noclip.website/#crazytaxi/dc1). If you haven't read the [first post](/post/crazytaxi), I'd highly recommend it, since this builds off many of the ideas developed there.
@@ -47,17 +48,26 @@ Now, you don't need to become an expert in `.obj` files to understand the rest o
 In `.obj` files, all data is stored as separate plaintext lines, prefixed by one or two letters to indicate the type of data it is. For our purposes, we'll only focus on three of these:
 * **Vertex positions:** shapes in 3D graphics are made up of points, called vertices, and the most important feature of a vertex is its position. Positions starts with a `v` and are followed by their $(x, y, z)$ coordinates.
 * **Vertex normals:** a [vertex normal](https://en.wikipedia.org/wiki/Vertex_normal) starts with `vn` and is also followed by $(x, y, z)$ coordinates, but instead of defining a point, these define a _vector_, which is math's version of an arrow. Normal vectors can be somewhat counterintuitive if you haven't dealt with them before, but basically, they define the direction a surface is facing at some point.
-    * As you might know, in computer graphics all shapes are made up of triangles, which always face a single direction, and thus have an implicit normal vector. So, wouldn't any normal vectors we provide be superfluous? Well, by letting the vertex's normal vector take any value we want, we can create the illusion of smooth, curved surfaces when lighting a scene. For example, because a modeled sphere can be only be approximated by some number of triangles, it will appear jagged _unless_ you define its vertex normals to always be radial to the sphere's center.
+
+<Aside>
+
+As you might know, in computer graphics all shapes are made up of triangles, which always face a single direction, and thus have an implicit normal vector. So, wouldn't any normal vectors we provide be superfluous? Well, by letting the vertex's normal vector take any value we want, we can create the illusion of smooth, curved surfaces when lighting a scene. For example, because a modeled sphere can be only be approximated by some number of triangles, it will appear jagged _unless_ you define its vertex normals to always be radial to the sphere's center.
+
+</Aside>
+
 * **Face elements:** a face starts with `f` and is followed by 3 groups of values which describe that triangle face. These can come in a couple different formats, but for our purposes, they'll take this form: `f a//m b//n c//o` where `a`, `b`, and `c` are _vertex indices_ (i.e. an index into the list of vertices defined above) and `m`, `n`, and `o` are _vertex normal indices_ (ditto for the normals defined above).
-    * Using indices to reference vertex data like positions, normals, and even other data like colors or texture coordinates, is a pretty universal technique in 3D graphics. Typically, these sections are just called a model's "indices" or "index data".
 
 With just these elements, we can render and light a 3D shape! To illustrate this (and the `.obj` format generally), I put together a little visualizer that highlights how each line in the `cube.obj` file maps to the rendered shape. Mouse over (or tap on) any of the lines below to see how it's represented in 3D space.
 
 <ObjViewer />
 
-(since I'm rendering our 3D cube in the decidedly 2D canvas API here, I had to fudge the lighting a bit, but you get the idea)
+The main takeaway here is that **a shape can be described as a series of triangles, with each point in a triangle having some number of _attributes_ (e.g. positions and normal vectors) associated with it**. In a bit, we'll see how other attributes such as color and texture data can be associated with each vertex. And frequently, those attribute values are defined in contiguous arrays by themselves, allowing the triangles to simply be composed of indexes into those arrays; this is so common that these indices are usually just called a model's "index data".
 
-The main takeaway here is that **a shape can be described as a series of triangles, with each point in a triangle having some number of _attributes_ (e.g. positions and normal vectors) associated with it**. In a bit, we'll see how other attributes such as color and texture data can be associated with each vertex. And frequently, those attribute values are defined in contiguous arrays by themselves, allowing the triangles to simply be composed of indexes into those arrays.
+<Aside>
+
+Because vertex attributes will generally be re-used several times, using indices to reference them rather than re-declaring them in-line makes index data a form of _compression_.
+
+</Aside>
 
 Now that we've got a sense of what goes into storing a cube in a file, let's see what Acclaim's been cooking up.
 
@@ -69,7 +79,7 @@ At last, here's `cube0.shp`. I recommend poking around a bit before continuing, 
 
 I don't know how common a practice this is, but when I'm looking at a new binary file format in a hex editor, I'll often sorta squint my eyes and scroll through it to try to get a feel for how "dense" the data looks at different points. This is useful for identifying the boundaries of different sections of data, since a sequence of 100 floating-point numbers will often look very different than a sequence of 100 16-bit unsigned integers.
 
-Also, as an aside, for the remainder of this post (and probably future ones), I'll abbreviate the number formats we've been describing as follows: a prefix of either `u` for an unsigned integer, `s` for signed integer, or `f` for floating-point, followed by the bit length. So a 16-bit signed integer is `s16`, while a 32-bit floating point number is an `f32`.
+Also, for the remainder of this post (and probably future ones), I'll abbreviate the number formats we've been describing as follows: a prefix of either `u` for an unsigned integer, `s` for signed integer, or `f` for floating-point, followed by the bit length. So a 16-bit signed integer is `s16`, while a 32-bit floating point number is an `f32`.
 
 To my eyes, there are a couple visibly obvious sections in this file:
 
@@ -88,9 +98,9 @@ To my eyes, there are a couple visibly obvious sections in this file:
 7. `0x340 - 0x390` (end):
     * Seems to be fixed-length strings, two of which reference `.tex` files that are in some of our `.all` files, and one that's... less clear (`mooth { 0x2`)
 
-If you saw some different boundaries, that's alright! Spoiler alert: my guess is not correct.
+If you saw some different boundaries, that's alright! Spoiler alert: my guesses here are not correct.
 
-Regardless, there's clearly a lot more going on here than in the `cube.obj` file. A perhaps unsurprising reason for this is that unlike `cube.obj`, Crazy Taxi's models are textured. That means `.shp` files have to somehow reference those textures (e.g. the filenames in section 7) and include some coordinates that map the texture to its vertices.
+In any case, there's clearly a lot more going on here than in the `cube.obj` file. A perhaps unsurprising reason for this is that unlike `cube.obj`, Crazy Taxi's models are textured. That means `.shp` files have to somehow reference those textures (e.g. the filenames in section 7) and include some coordinates that map the texture to its vertices.
 
 If we scan through section 1, which I guessed was the file header, there are some suspiciously familiar `u32` values scattered about it. Take a second to look yourself, and see if you can find what I'm talking about. _(hint: pay attention to our suspected section boundaries)_
 
@@ -112,19 +122,25 @@ Here's a slide from a Nintendo keynote titled ["NINTENDO GAMECUBE: The Ultimate 
 
 ![The GameCube's fixed function pipeline](/images/crazy-taxi/gcn-gpu-arch.png)
 
-The way game developers interacted with the Flipper GPU was largely through Nintendo's GameCube Graphics Library, aka GX. For those interested in a much deeper dive into how this API worked, [you can find the GX manual on the Internet Archive](https://archive.org/details/AdvancedGX); when I read it, I was surprised at how beginner-friendly it was, though Jasper reminded me was due to the fact that in 2001, _most game developers were beginners to 3D graphics_.
+The way game developers interacted with the Flipper GPU was largely through Nintendo's GameCube Graphics Library, aka GX. For those interested in a much deeper dive into how this API worked, [you can find the GX manual on the Internet Archive](https://archive.org/details/AdvancedGX). It's a surprisingly beginner-friendly and casually written explanation of a lot of 3D graphics basics, though as Jasper pointed out, that's probably because in 2001 when the GameCube came out, _most game developers were beginners to 3D graphics_.
 
 In fact, just to underscore how useful finding this manual was, let's enshrine it as a boldtext reverse engineering lesson: **search around for existing documentation!** If you find a unique looking project name or error string while poking around a binary, search for it! You'd be surprised how many times looking for a unique error string on GitHub has yielded an accidentally-public repo of proprietary code, or adding "filetype:pdf" to a Google search of a project name resulted in very helpful documentation.
 
 ## Down the pipeline we go
 
 Anyway, back to the process of convincing GCN to render something. The long and short of it is this:
-1. You submit your model's data to the GPU. The Flipper GPU allows each of your model's vertices to contain up to 12 attributes: 1 position, 1 normal, 2 colors, and 8 texture coordinates.
+1. You submit your model's data to the GPU. The Flipper GPU allows each of your model's vertices to contain up to 12 attributes: 1 position, 1 normal, 2 colors, and 8 texture coordinates, in that order.
     * In addition to telling the GPU which of these attributes you're using, **you also need to describe their format**: e.g. whether the numbers are `f32`s, or integer types like `u8`, `s16`, etc. Importantly, for an integer type, you can also declare a number of _fractional bits_, which provides a way of encoding [_fixed-point_](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) (as opposed to _floating-point_) numbers. We'll explore this in more detail later.
 2. You submit something Nintendo calls a **Display List** (or **DL**) to the GPU. A DL contains commands for the GPU, which can be either a draw call (e.g. "draw some triangles" or "draw some lines"), or a register command that configures part of the fixed-function pipeline (e.g. "use this transform matrix" or "turn on fog with these parameters").
-    * Draw calls either reference predefined vertex attributes using indices, or allow the program to define the the attributes directly in the DL. Much of what we'll be looking at involves indices.
+
 3. The GPU sends the DL down its fixed function pipeline and ultimately draws pixels onto the screen.
 
+
+<Aside>
+
+It's worth noting that DL draw calls can either specify vertex attribute data directly in the DL, or reference data already submitted via indices. Jasper speculates that this process of passing model data and then referencing it within a DL in the form of indices is what the "Database" step of the GCN fixed-function pipeline refers to!
+
+</Aside>
 Now that we know the basics of what GCN expects from Crazy Taxi in order to draw a cube (namely, some vertex attributes and some DL draw calls), let's take another look at `cube0.shp` and see if we can't spot some cubish data.
 
 ## A return to the cube
@@ -186,9 +202,13 @@ As I mentioned, Jasper determined much of the above pretty quickly, and with som
 
 For example, by using a column width of 2 bytes (making each row a single `s16`), he could quickly see the numbers alternated between just two values. Then, by switching to a column width of 6 (making each row an $(x,y,z)$ coordinate, he saw the 8 positions which resembled the telltale pattern of a cube (i.e. all possible $(x,y,z)$ combinations of those two values).
 
-After determining that the position data was at `0x120`, he guessed that many of the other sections might be the other GCN vertex attributes: normal vectors, colors 1 and 2, and textures 1 through 8. Using a similar analysis to what we performed on the positions, he noted that the `0x160` section was likely color data, though it's not immediately clear what format it's in. Since the ASCII junk starts 12 bytes in, we can assume for now that there's just 12 bytes of color data.
+After determining that the position data was at `0x120`, he guessed that many of the other sections might be the other GCN vertex attributes in the order specified by GX: normal vectors, colors 1 and 2, and textures 1 through 8. Using a similar analysis to what we performed on the positions, he noted that the `0x160` section was likely color data, though it's not immediately clear what format it's in. Since the ASCII junk starts 12 bytes in, we can assume for now that there's just 12 bytes of color data.
 
-Then, he noticed the ordering of the `u32` offsets in the header starting at `0xcc`. It starts with `0x120`, which we know is our position data, followed by `0x0`, then `0x160` which we're guessing is color data, then another `0x0`, and then `0x180` which seems to be some other numeric attribute data. Wouldn't it be nice if these 12 values corresponded to the 12 vertex attributes? Then, we'd have:
+Then, he noticed the ordering of the `u32` offsets in the header starting at `0xcc`:
+
+<HexEditor file={CTData.cube0Shp} littleEndian={false} startOffset={0xcc} displayLength={0x40} />
+
+It starts with `0x120`, which we know is our position data, followed by `0x0`, then `0x160` which we're guessing is color data, then another `0x0`, and then `0x180` which seems to be some other numeric attribute data. Wouldn't it be nice if these 12 values corresponded to the 12 vertex attributes? Then, we'd have:
 
 <Table
     header={['No.', 'Offset', 'GCN Vertex Attribute']}
@@ -211,7 +231,7 @@ To be clear, at this point this is just a theory which needs testing. But if we 
 
 Texture coordinates, aka `uv` coordinates, are so-called because they're 2D coordinate pairs which traditionally use the letters $(u,v)$ to distinguish them from a position's $(x,y,z)$. This post is already far too long to explain them fully, but you can think of them as a way to map a portion of a 2D image (the texture) to each of a 3D object's triangles. If you'd like to learn more, [Wikipedia's got a great article on this](https://en.wikipedia.org/wiki/UV_mapping).
 
-One thing to know about `uv` coordinates is that both of their components tend to be normalized between $[0, 1]$. So, let's see if we find a fixed-point notation that converts the data at `0x180` into pairs of values between $[0, 1]$. I made a little interactive widget that lets you cycle through the possible fixed-point formats for the first $1/4$ of these values, which I'm assuming are `u16`:
+One thing to know about `uv` coordinates is that both of their components tend to be normalized between $[0, 1]$. So, let's see if we find a fixed-point format that converts the data at `0x180`, which I'm assuming are `u16`s, into values between $[0, 1]$. I made a little interactive widget that lets you explore these formats: try changing the number of fractional bits vs. integer bits to fix the values into our expected `uv` range.
 
 <FixedPointView
     data={[
@@ -260,9 +280,27 @@ Note that for brevity's sake, I abbreviated a large number of `unk` fields betwe
 
 Thus far, we've developed a theory that's accounted for three of the sections we identified in our `.shp` file, and bit of the header data: starting at offset `0xcc` in the header, there are 12 offsets which appear to correspond to the 12 vertex attribute streams that GX allows in a draw call. But we're still missing a key ingredient: the draw call itself. So let's dig a bit deeper into what GCN draw calls look like.
 
-As a reminder, draw calls are submitted to the GX library in the form of Display Lists (DLs), which start with a byte identifying the type of call, which is then bitwise OR'd with the vertex data's Vertex Attribute Table (VAT) offset. The VAT entry at that offset describes how many attributes we've submitted (let's call that number $a$), as well as the format of each attribute stream. This first byte is then followed by a `u16` representing the number of vertices (let's call it $v$), and then followed by a stream of $a*v$ indices.
+As a reminder, draw calls are submitted to the GX library in the form of Display Lists (DLs). These start with a header byte whose first 5 bits identify the type of call, and whose latter 3 bits are the vertex data's Vertex Attribute Table (VAT) index. If you're familiar with bitwise logic operations, you can think of this header byte as `CALL_TYPE | VAT_INDEX`.
 
-Pretty early on, Jasper spotted that the data starting at `0x240` looked a lot like index data (`u16`s whose values increase sequentially), but he also noticed that the first couple bytes (<ByteSpan data={[0x93, 0x00, 0x18]} />) didn't quite fit the pattern. Cue some GCN-specific knowledge: one of the more common types of draw calls, `GX_DRAW_TRIANGLES`, has a starting byte equal to `0x90`. If `cube0.shp` used the VAT index `0x03`, then a `GX_DRAW_TRIANGLES` DL _would_ start with `0x93`. Then, interpreting the next two bytes as a `u16` gives us a vertex count of 24.
+The VAT entry at that offset describes how many attributes we've submitted (let's call that number $a$), as well as the format of each attribute stream (e.g. `f32`, `Q015`, etc). That first byte is then followed by a `u16` representing the number of vertices (let's call this $v$), which is then followed by a stream of $a*v$ indices (one per attribute, per vertex).
+
+<Aside>
+
+If you're familiar with more common 3D graphics APIs, this might strike you as unusual. That's because pretty much every other API expects a vertex to provide a _single_ index that's used across all its attribute buffers, whereas GCN allows each of the vertex's attribute indices to differ.
+
+The GCN approach provides one clear advantage: **smaller attribute buffers**.
+
+Suppose 3 vertices have different positions, $P_0, P_1, P_2$, but use the same color value, $C_0$. In a modern API, because each vertex has a different position, the indices must also be different, and thus the color attribute buffer would need 3 duplicate copies of $C_0$ for the indices to line up.
+
+But in GCN, the color buffer can just contain the single $C_0$ value, and each vertex color index can reference it separately from the positions.
+
+</Aside>
+
+Pretty early on, Jasper spotted that the data starting at `0x240` looked a lot like index data:
+
+<HexEditor file={CTData.cube0Shp} littleEndian={false} startOffset={0x240} displayLength={0x100} />
+
+Visually, it looks like there's a bunch of 2-byte values which seem to increase sequentially, but if you interpret them as big-endian `u16`s as you might expect, we get large and non-sequential values. However, Jasper also noticed that the first couple bytes (<ByteSpan data={[0x93, 0x00, 0x18]} />) didn't quite fit the pattern. Cue some GCN-specific knowledge: one of the more common types of draw calls, `GX_DRAW_TRIANGLES`, has a starting byte equal to `0x90`. If we suppose that `cube0.shp` uses the VAT index `0x03`, then a `GX_DRAW_TRIANGLES` DL _would_ start with `0x93`. Then, interpreting the next two bytes as a `u16` gives us a vertex count of 24, and every other 2-byte value reads as an index-like low `u16` value.
 
 So let's do some back-of-the-napkin math here. We know that we have $a=3$ attributes and $v=24$ vertices, so we'd expect to see $3 * 24 = 72$ indices after the first three bytes. At 2 bytes per `u16`, that means $72 * 2 = 144$ bytes. Adding 144 bytes to our starting offset of `0x240`, plus the "header" section of three bytes, gives us a predicted ending offset at `0x2d3`, which is just about exactly where the stream of indices ends! And, looking forward to offset `0x2e0`, it looks like there's _yet another_ `GX_DRAW_TRIANGLES` DL, and the math works out similarly well there.
 
