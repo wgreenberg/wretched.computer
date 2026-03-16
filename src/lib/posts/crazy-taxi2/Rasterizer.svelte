@@ -216,6 +216,6 @@
     };
 </script>
 
-<Canvas class="rounded-b-md" {width} {height}>
+<Canvas class="max-md:rounded-b-md md:rounded-r-md" {width} {height}>
     <Layer {render} />
 </Canvas>

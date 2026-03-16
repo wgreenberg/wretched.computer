@@ -61,7 +61,7 @@ With just these elements, we can render and light a 3D shape! To illustrate this
 
 <ObjViewer />
 
-The main takeaway here is that **a shape can be described as a series of triangles, with each point in a triangle having some number of _attributes_ (e.g. positions and normal vectors) associated with it**. In a bit, we'll see how other attributes such as color and texture data can be associated with each vertex. And frequently, those attribute values are defined in contiguous arrays by themselves, allowing the triangles to simply be composed of indexes into those arrays; this is so common that these indices are usually just called a model's "index data".
+The main takeaway here is that **a shape can be described as a series of triangles, with each vertex in a triangle having some number of _attributes_ (e.g. positions and normal vectors) associated with it**. In a bit, we'll see how other attributes such as color and texture data can be associated with each vertex. And frequently, those attribute values are defined in contiguous arrays by themselves, allowing the triangles to simply be composed of indexes into those arrays; this is so common that these indices are usually just called a model's "index data".
 
 <Aside>
 
@@ -122,7 +122,7 @@ Here's a slide from a Nintendo keynote titled ["NINTENDO GAMECUBE: The Ultimate 
 
 ![The GameCube's fixed function pipeline](/images/crazy-taxi/gcn-gpu-arch.png)
 
-The way game developers interacted with the Flipper GPU was largely through Nintendo's GameCube Graphics Library, aka GX. For those interested in a much deeper dive into how this API worked, [you can find the GX manual on the Internet Archive](https://archive.org/details/AdvancedGX). It's a surprisingly beginner-friendly and casually written explanation of a lot of 3D graphics basics, though as Jasper pointed out, that's probably because in 2001 when the GameCube came out, _most game developers were beginners to 3D graphics_.
+The way game developers interacted with the Flipper GPU was largely through Nintendo's GameCube Graphics Library, aka GX. For those interested in a much deeper dive into how this API worked, [you can find the GX manual on the Internet Archive](https://archive.org/details/revolution-graphics-library-gx_5b506359097c47ef368b4572). It's a surprisingly beginner-friendly and casually written explanation of a lot of 3D graphics basics, though as Jasper pointed out, that's probably because in 2001 when the GameCube came out, _most game developers were beginners to 3D graphics_.
 
 In fact, just to underscore how useful finding this manual was, let's enshrine it as a boldtext reverse engineering lesson: **search around for existing documentation!** If you find a unique looking project name or error string while poking around a binary, search for it! You'd be surprised how many times looking for a unique error string on GitHub has yielded an accidentally-public repo of proprietary code, or adding "filetype:pdf" to a Google search of a project name resulted in very helpful documentation.
 
@@ -282,7 +282,7 @@ Thus far, we've developed a theory that's accounted for three of the sections we
 
 As a reminder, draw calls are submitted to the GX library in the form of Display Lists (DLs). These start with a header byte whose first 5 bits identify the type of call, and whose latter 3 bits are the vertex data's Vertex Attribute Table (VAT) index. If you're familiar with bitwise logic operations, you can think of this header byte as `CALL_TYPE | VAT_INDEX`.
 
-The VAT entry at that offset describes how many attributes we've submitted (let's call that number $a$), as well as the format of each attribute stream (e.g. `f32`, `Q015`, etc). That first byte is then followed by a `u16` representing the number of vertices (let's call this $v$), which is then followed by a stream of $a*v$ indices (one per attribute, per vertex).
+The VAT entry at that offset describes how many attributes we've submitted (let's call that number $a$), as well as the format of each attribute stream (e.g. `f32`, `Q015`, etc). After the header byte is then followed by a `u16` representing the number of vertices (let's call this $v$), which is then followed by a stream of $a*v$ indices (one per attribute, per vertex).
 
 <Aside>
 

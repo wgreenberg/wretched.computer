@@ -5,6 +5,8 @@
         points,
         normals,
         tris,
+        height,
+        width,
         selectedPoints = $bindable(),
         selectedNormals = $bindable(),
         selectedTris = $bindable(),
@@ -12,6 +14,8 @@
         points: vec3[],
         normals: vec3[],
         tris: [number, number][][],
+        height: number,
+        width: number,
         selectedPoints: number[],
         selectedNormals: number[],
         selectedTris: number[],
@@ -43,7 +47,7 @@
     const codeLineHover = "bg-green-900"
 </script>
 
-<div class="code font-mono text-sm flex flex-col items-start max-h-72">
+<div style="--height: {height}px; --width: {width}px" class="code max-w-[--width] max-h-[--height] max-md:rounded-t-md md:rounded-l-md font-mono text-sm flex flex-col items-start overflow-auto">
     <p class={codeLineClass}>g cube</p>
     <br>
     <div class="flex flex-col items-start">
@@ -96,6 +100,5 @@
         white-space: pre;
         padding: 1em;
         overflow: auto;
-        border-radius: 0.3em;
     }
 </style>

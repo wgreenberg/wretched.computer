@@ -74,11 +74,13 @@
 	})
 </script>
 
-<div class="flex flex-col w-fit">
+<div class="container grid grid-cols-1 md:grid-cols-2 w-fit">
     <ObjText
         {points}
         {tris}
         {normals}
+        {height}
+        {width}
         bind:selectedNormals={selectedNormals}
         bind:selectedPoints={selectedPoints}
         bind:selectedTris={selectedTris}
