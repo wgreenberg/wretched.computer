@@ -27,17 +27,17 @@ In this post, we'll build on these lessons with a couple new techniques in order
 
 ## What's in a name?
 
-But why do I think `.shp` files have anything to do with models? Well for one, `.shp` looks a lot like the word "shape", doesn't it? Admittedly, this is fairly weak evidence by itself, but it was enough to give me my initial hunch, and luckily it was bolstered by a number of other observations:
+But why do I think `.shp` files have anything to do with models? Well for one, `.shp` looks a lot like the word "shape", doesn't it? Admittedly, this is fairly weak evidence by itself, but it was enough to give me my initial hunch and was luckily bolstered by a number of other observations:
 
-* Prior to expanding the `.all` archives, the only `.shp` file is called `cube0.shp`, and cubes are famously a kind of shape. It also seemed roughly the size I'd expect for a cube's geometry (i.e. small)
+* Prior to expanding the `.all` archives, the only `.shp` file in the game files is called `cube0.shp`, and cubes _are_ famously a kind of shape. It also seemed roughly the size I'd expect for a cube's geometry (i.e. small)
 * Besides `cube0.shp`, all the other `.shp` files live in archive files with names like `polDC0.all`, `polDC1.all`, etc., whose prefix `pol` kinda suggests the word "polygon"
 * The 2,744 `.shp` files within those archives have names like `CZ_train_B.shp`, `course_4_129.shp`, `CZ_IMPALA.shp`, which all seem like reasonable names for game models
 
-Running with the "`.shp` == shape" theory, and assuming `cube0.shp` indeed represented a cube's geometry in this format, analyzing it seemed like a great first step to cracking this nut.
+Running with the "`.shp` == shape" theory, and assuming `cube0.shp` indeed contained a cube's geometry in some Crazy Taxi format, analyzing that file seemed like a great first step to cracking this nut.
 
 ## Rosetta Cube
 
-Cubes, as you might know, are pretty simple shapes. And after the humble triangle, they're typically the first thing you draw to the screen when writing a renderer or game engine. So the fact that the developers at Acclaim dropped what appears to be a cube written in their proprietary format into our lap makes it something like a Rosetta Stone, since although we don't know what makes a `.shp` file tick, we certainly know what to expect from a dang cube.
+Cubes, as you might know, are pretty simple shapes. After the humble triangle, they're typically the first thing you draw to the screen when writing a renderer or game engine. So the fact that the developers at Acclaim dropped what appears to be a cube written in their proprietary format into our lap makes it something like a Rosetta Stone, since although we don't know what makes a `.shp` file tick, we certainly know what to expect from a dang cube.
 
 To inform our investigation into the `.shp` file, let's review some standard elements used to store 3D geometry using a well-known, plaintext file format: the [Wavefront .obj file](https://en.wikipedia.org/wiki/Wavefront_.obj_file). Since `.obj` files are plaintext, they're pretty inefficient in terms of filesize, but their simplicity and ease of editing have made them so prolific that even macOS' builtin file previewer has a full renderer for them:
 
@@ -45,7 +45,7 @@ To inform our investigation into the `.shp` file, let's review some standard ele
 
 Now, you don't need to become an expert in `.obj` files to understand the rest of this post, but the format's simplicity makes it a great subject to analyze some of the more universally-used concepts in 3D modeling.
 
-In `.obj` files, all data is stored as separate plaintext lines, prefixed by one or two letters to indicate the type of data it is. For our purposes, we'll only focus on three of these:
+In `.obj` files, all data is stored as plaintext lines, prefixed by one or two letters to indicate the type of data it is. For our purposes, we'll only focus on three of these:
 * **Vertex positions:** shapes in 3D graphics are made up of points, called vertices, and the most important feature of a vertex is its position. Positions starts with a `v` and are followed by their $(x, y, z)$ coordinates.
 * **Vertex normals:** a [vertex normal](https://en.wikipedia.org/wiki/Vertex_normal) starts with `vn` and is also followed by $(x, y, z)$ coordinates, but instead of defining a point, these define a _vector_, which is math's version of an arrow. Normal vectors can be somewhat counterintuitive if you haven't dealt with them before, but basically, they define the direction a surface is facing at some point.
 
@@ -55,21 +55,21 @@ As you might know, in computer graphics all shapes are made up of triangles, whi
 
 </Aside>
 
-* **Face elements:** a face starts with `f` and is followed by 3 groups of values which describe that triangle face. These can come in a couple different formats, but for our purposes, they'll take this form: `f a//m b//n c//o` where `a`, `b`, and `c` are _vertex indices_ (i.e. an index into the list of vertices defined above) and `m`, `n`, and `o` are _vertex normal indices_ (ditto for the normals defined above).
+* **Face elements:** a face starts with `f` and is followed by 3 groups of values which describe a triangle. These can come in a couple different formats, but for our purposes, they'll take this form: `f a//m b//n c//o` where `a`, `b`, and `c` are _position indices_ (i.e. an index into the list of positions defined above) and `m`, `n`, and `o` are _vertex normal indices_ (ditto for the normals defined above).
 
-With just these elements, we can render and light a 3D shape! To illustrate this (and the `.obj` format generally), I put together a little visualizer that highlights how each line in the `cube.obj` file maps to the rendered shape. Mouse over (or tap on) any of the lines below to see how it's represented in 3D space.
+With just these elements, we can render and light a 3D shape! To illustrate this (and the `.obj` format generally), I put together a little visualizer that highlights how each line in an `cube.obj` file maps to the rendered shape. Mouse over (or tap on) any of the lines below to see how it's represented in 3D space.
 
 <ObjViewer />
 
-The main takeaway here is that **a shape can be described as a series of triangles, with each vertex in a triangle having some number of _attributes_ (e.g. positions and normal vectors) associated with it**. In a bit, we'll see how other attributes such as color and texture data can be associated with each vertex. And frequently, those attribute values are defined in contiguous arrays by themselves, allowing the triangles to simply be composed of indexes into those arrays; this is so common that these indices are usually just called a model's "index data".
+The main takeaway here is that **a shape can be described as a series of triangles, with each vertex in a triangle having some number of _attributes_ (e.g. positions and normal vectors) associated with it**. In a bit, we'll see how other attributes such as color and texture data can be associated with each vertex. And like the positions and normal vectors in our `cube.obj` example, those attribute values are defined in contiguous arrays by themselves, allowing the triangles to simply be composed of indexes into those arrays. **This is so common that these indices are usually just called a model's "index data"**.
 
 <Aside>
 
-Because vertex attributes will generally be re-used several times, using indices to reference them rather than re-declaring them in-line makes index data a form of _compression_.
+Because vertex attributes will generally be re-used several times within a model, using indices to reference them rather than re-declaring them in-line makes index data a form of _compression_.
 
 </Aside>
 
-Now that we've got a sense of what goes into storing a cube in a file, let's see what Acclaim's been cooking up.
+Now that we've got a sense of how to put a cube in a file, let's see what Acclaim's been cooking up.
 
 ## What's in the box
 
@@ -92,27 +92,33 @@ To my eyes, there are a couple visibly obvious sections in this file:
 4. `0x180 - 0x1c0`:
     * Compact array of maybe `u16`s or `s16`s
 5. `0x1c0 - 0x240`:
-    * Seems to be a mixture of `u32`s, `f32`s, `u8`s, and possibly even some string data (`Format"` and even an ASCII-formatted floating-point number??).
+    * Seems to be a mixture of `u32`s, `f32`s, `u8`s, and possibly even some string data ("`Format`" and even an ASCII-formatted floating-point number??).
 6. `0x240 - 0x320`:
     * Could be `u16`s or `s16`s
 7. `0x340 - 0x390` (end):
-    * Seems to be fixed-length strings, two of which reference `.tex` files that are in some of our `.all` files, and one that's... less clear (`mooth { 0x2`)
+    * Seems to be fixed-length strings, two of which reference `.tex` files that are in some of our `.all` files, and one that's... less clear ("`mooth { 0x2`")
 
 If you saw some different boundaries, that's alright! Spoiler alert: my guesses here are not correct.
 
 In any case, there's clearly a lot more going on here than in the `cube.obj` file. A perhaps unsurprising reason for this is that unlike `cube.obj`, Crazy Taxi's models are textured. That means `.shp` files have to somehow reference those textures (e.g. the filenames in section 7) and include some coordinates that map the texture to its vertices.
 
-If we scan through section 1, which I guessed was the file header, there are some suspiciously familiar `u32` values scattered about it. Take a second to look yourself, and see if you can find what I'm talking about. _(hint: pay attention to our suspected section boundaries)_
+If we scan through section 1, which I guessed was the file header, we first see the `f32` value `1.0` which we identified in part 1 as the file's "[magic number](https://en.wikipedia.org/wiki/File_format#Magic_number)", or possibly a version number for the `.shp` format. We then see a handful of small `u32`ish numbers, and a few more `f32s` (possibly the shape's dimensions? world-space position? unclear).
 
-It looks like nearly every one of our eyeballed section offsets (e.g. `0x120`, `0x180`, `0x1c0`, etc.) are right in the file's header, sort of like a table of contents! However unlike in the `.all` file, these offsets aren't associated with a string or anything that might identify what they are, which means we'll need to find another way to identify their purpose. Also, the header includes an offset I didn't spot in my initial scan, one at `0x160`: the data there does look sufficiently different from the preceding ASCII data, so it makes sense that it's its own section, though it's not immediately clear to me what it is.
+Further down in the header, though, there are some _suspiciously familiar_ `u32` values scattered about it. Take a second to look yourself, and see if you can find what I'm talking about. _(hint: pay attention to our suspected section boundaries)_
+
+It looks like nearly every one of our eyeballed section offsets (e.g. `0x120`, `0x180`, `0x1c0`, etc.) are right in the file's header, sort of like a table of contents! However unlike in the `.all` file, these offsets aren't associated with a string or anything that might identify what they are, which means we'll need to find another way to identify their purpose. Also, the header includes an offset I didn't spot in my initial scan, one at `0x160`: the data there _does_ look sufficiently different from the preceding ASCII data, so it makes sense that it's its own section, though it's not immediately clear to me what it is yet.
 
 ## Roadblocks and detours
 
-When faced with as many unknowns as we have here, it can be hard to know where to start. A reasonable approach might be to look at a bunch of different `.shp` files and look for commonalities and patterns (which I did), such as whether the header is fixed or variable size (it's fixed to `0x120` bytes). Another might be to start analysing the game's binary with a tool like Ghidra (which I also did), but at least in this case, digging into the monolithic and symbol-less binary like a GameCube game led to hours of rabbit holes and diversions with no real forward progress.
+When faced with as many unknowns as we have here, it can be hard to know where to start. A reasonable approach might be to just check out a bunch of different `.shp` files and look for commonalities and patterns (which I did). I learned a few minor things doing this, such as the header appears to have a fixed size of `0x120` bytes, but nothing terribly helpful.
 
-In the end, after spending quite a while spinning my wheels and getting nowhere, I asked for help from Jasper, [noclip.website's](https://noclip.website) developer. And luckily for me, he was able to determine quite a lot of what's going on here relatively quickly. That's because he's spent years reverse engineering GameCube games and has a seriously impressive working knowledge of that system's graphics architecture. And while I could just copy his findings here verbatim, I think that'd be missing a valuable learning opportunity for how a beginner might approach this problem on their own. And besides, it'd make this post rather short.
+Another approach might be to start analysing the game's binary with a tool like Ghidra (which I also did), but at least in this case, digging into the monolithic and symbol-less binary like a GameCube game led to hours of rabbit holes and diversions with no real forward progress. We'll dig deeper into a Ghidra decompilation of the game in a future post, but for the purposes of cracking the `.shp` format, it was something of a dead end.
 
-So I won't be doing that. Instead, I'd like to take us through a bit of background into how the GameCube's graphics hardware works, and then try to re-derive his findings from first principles with you all. Then, I'll review some of what his process _actually_ was, since there's some great lessons to be learned there too.
+In the end, after spending quite a while spinning my wheels and getting nowhere, I asked for help from Jasper, [noclip.website's](https://noclip.website) developer. And luckily for me, he was able to determine quite a lot of what's going on here relatively quickly!
+
+That's because he's spent years reverse engineering GameCube games and has a seriously impressive working knowledge of that system's graphics architecture. And while I could just copy his findings here verbatim, I think that'd be missing a valuable learning opportunity for how a beginner might approach this problem on their own. And besides, it'd make this post rather short, so I won't be doing that.
+
+Instead, I'd like to take us through a bit of background into how the GameCube's graphics hardware works, and then try to re-derive his findings from first principles with you all. Then, I'll review some of what his process _actually_ was, since there's some great lessons to be learned there too.
 
 ## A brief history of GCN
 
@@ -122,18 +128,20 @@ Here's a slide from a Nintendo keynote titled ["NINTENDO GAMECUBE: The Ultimate 
 
 ![The GameCube's fixed function pipeline](/images/crazy-taxi/gcn-gpu-arch.png)
 
-The way game developers interacted with the Flipper GPU was largely through Nintendo's GameCube Graphics Library, aka GX. For those interested in a much deeper dive into how this API worked, [you can find the GX manual on the Internet Archive](https://archive.org/details/revolution-graphics-library-gx_5b506359097c47ef368b4572). It's a surprisingly beginner-friendly and casually written explanation of a lot of 3D graphics basics, though as Jasper pointed out, that's probably because in 2001 when the GameCube came out, _most game developers were beginners to 3D graphics_.
+While not particularly illuminating, it does demonstrate a few of the key steps involved in converting model data into pixels.
 
-In fact, just to underscore how useful finding this manual was, let's enshrine it as a boldtext reverse engineering lesson: **search around for existing documentation!** If you find a unique looking project name or error string while poking around a binary, search for it! You'd be surprised how many times looking for a unique error string on GitHub has yielded an accidentally-public repo of proprietary code, or adding "filetype:pdf" to a Google search of a project name resulted in very helpful documentation.
+The way game developers interacted with the Flipper GPU was largely through Nintendo's GameCube Graphics Library, aka GX. For those interested in a much deeper dive into how this API worked, [you can find the original GX manual on the Internet Archive](https://archive.org/details/revolution-graphics-library-gx_5b506359097c47ef368b4572). It's a surprisingly beginner-friendly and casually written explanation of a lot of 3D graphics basics, and as Jasper pointed out, that's probably because in 2001 when the GameCube came out, _most game developers were beginners to 3D graphics_.
+
+In fact, just to underscore how useful finding this manual was, let's enshrine it as a boldtext reverse engineering lesson: **search around for existing documentation!** If you find a unique looking project name or error string while poking around a binary, search for it! You'd be surprised how frequently simply searching for a unique error string on GitHub has yielded an accidentally-public repo of proprietary code, or adding "filetype:pdf" to a Google search of a project name resulted in very helpful documentation.
 
 ## Down the pipeline we go
 
 Anyway, back to the process of convincing GCN to render something. The long and short of it is this:
-1. You submit your model's data to the GPU. The Flipper GPU allows each of your model's vertices to contain up to 12 attributes: 1 position, 1 normal, 2 colors, and 8 texture coordinates, in that order.
-    * In addition to telling the GPU which of these attributes you're using, **you also need to describe their format**: e.g. whether the numbers are `f32`s, or integer types like `u8`, `s16`, etc. Importantly, for an integer type, you can also declare a number of _fractional bits_, which provides a way of encoding [_fixed-point_](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) (as opposed to _floating-point_) numbers. We'll explore this in more detail later.
-2. You submit something Nintendo calls a **Display List** (or **DL**) to the GPU. A DL contains commands for the GPU, which can be either a draw call (e.g. "draw some triangles" or "draw some lines"), or a register command that configures part of the fixed-function pipeline (e.g. "use this transform matrix" or "turn on fog with these parameters").
-
-3. The GPU sends the DL down its fixed function pipeline and ultimately draws pixels onto the screen.
+1. You submit your model's data to the GPU in the form of _vertex attribute buffers_. The Flipper GPU allows each of your model's vertices to contain up to 12 attributes: 1 position, 1 normal, 2 colors, and 8 texture coordinates, in that order.
+2. In addition to submitting the buffers, you also need to describe which of the 12 attributes you're using, as well as their format (e.g. `f32`, `s16`, etc). This is done by configuring an entry in something called the **Vertex Attribute Table**, or **VAT**. For example, a VAT entry might say something like "my attributes contain positions as `f32`, normals as `s16`s, and colors as `u8` RGB triples".
+    * Importantly, for integer types, you can also declare a number of _fractional bits_, which provides a way of encoding [_fixed-point_](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) (as opposed to _floating-point_) numbers. We'll explore this in more detail later.
+3. You submit something Nintendo calls a **Display List** (or **DL**) to the GPU. A DL contains commands for the GPU, which can be either a draw call (e.g. "draw some triangles" or "draw some lines"), or a register command that configures part of the fixed-function pipeline (e.g. "use this transform matrix" or "turn on fog with these parameters").
+4. The GPU sends the DL down its fixed function pipeline and ultimately draws pixels onto the screen.
 
 
 <Aside>
@@ -151,9 +159,9 @@ To recap what we already know about our file, we have a header occuping the firs
 
 Glancing through the sections again, only the section starting at `0x120` looks "dense" enough to contain real-valued numbers like we'd expect from 3D positions, so let's see if we can find any cube-like position data in there.
 
-First off, how much data are we working with in this section? Because the next section offset in the header is `0x160`, it's tempting to say the section's `0x160` $-$ `0x120` $=$ `0x40`, or 64 in decimal, bytes long. Since we're expecting the positions of a cube's vertices, we'd be hoping to see 24 numbers in here (8 points per cube $*$ 3 numbers per point = 24 numbers), which would give us $64/24=2.666...$ bytes per number. $\frac{2}{3}$ of a byte isn't a workable quantity, so that's not terribly promising.
+First off, how much data are we working with in this section? Because the next section offset in the header is `0x160`, it's tempting to say the section's `0x160` $-$ `0x120` $=$ `0x40`, or 64 in decimal, bytes long. Since we're expecting the positions of a cube's vertices, we'd be hoping to see 24 numbers in here (8 points per cube $*$ 3 numbers per point = 24 numbers), which would give us $64/24=2.666...$ bytes per number. Not promising, since $\frac{2}{3}$ of a byte isn't a workable quantity.
 
-But note that the data starting at `0x150` abruptly changes to bytes which are nearly all ASCII values. While it's not _impossible_ that our number data coincidentally has ASCII-ish values at times, the consistency here strongly implies that this data is actually a string. However, if it was intended to be read as a string, we'd either expect it to have a length prefix (it doesn't), or be null-terminated with a neat fixed-length block size (it's not). This pattern occurs a couple times in the `.shp` file, where we have an abrupt transition from binary data to sloppy ASCII text that's neither length-prefixed nor a neat fixed-length block.
+But note that the data starting at `0x150` abruptly changes to bytes which are nearly all ASCII values. While it's not _impossible_ that our number data coincidentally has ASCII-ish values at times, the consistency here strongly implies that this data is actually a string. However, if it was actually _intended_ to be read as a string, we'd either expect it to have a length prefix (it doesn't), or be null-terminated with a neat fixed-length block size (it's not). This pattern occurs a couple times in the `.shp` file, where we have an abrupt transition from binary data to sloppy ASCII text that's neither length-prefixed nor a neat fixed-length block.
 
 As such, I think it's more likely that this is junk data in otherwise empty padding bytes, leftover from whatever dev tooling Acclaim used to create these files. If that's the case, our section is actually just `0x30` bytes, or 48 in decimal. That'd give us $48/24=2$ bytes per number, which is far more reasonable!
 
@@ -163,7 +171,7 @@ Now, since `f16` numbers weren't an option for GCN vertex attribute values, 2 by
 
 I suspect most readers of this are aware of [_floating-point_](https://en.wikipedia.org/wiki/Floating-point_arithmetic) numbers, which can encode real numbers with an enormous range of precision thanks to their ability to "float" the decimal position. They accomplish this by reserving a portion of the number's bits for an exponent value, such that $0.1412$ and $141.2$ in floating-point would share the same base value, but would differ in their exponent value.
 
-In contrast, a fixed-point number is a real-valued number encoded in a way that guarantees a, well, _fixed_ degree of decimal precision. But unlike floating-point numbers, that precision isn't encoded in the number itself, and must be specified by the format. So you wouldn't just say a 16-bit number is fixed-point, you'd say it's fixed-point with (for example) 7 integer bits and 9 fractional bits. There's a common notation for describing this format called [Q notation](https://en.wikipedia.org/wiki/Q_(number_format)): a `Qm.n` number consists of $m+n$ bits total (or $1+m+n$ bits for signed values), with $m$ integer bits and $n$ fractional bits. Its value would be the usual base-2 intepretation of its integer component, plus the fractional component scaled by a factor of $\frac{1}{2^n}$.
+In contrast, a fixed-point number is a real-valued number encoded in a way that guarantees a, well, _fixed_ degree of decimal precision. But unlike floating-point numbers, that precision isn't encoded in the number itself, and must be specified by the format. So you wouldn't just say a 16-bit number is fixed-point, you'd say it's fixed-point with (for example) 7 integer bits and 9 fractional bits. There's a common notation for describing this format called [Q notation](https://en.wikipedia.org/wiki/Q_(number_format)): a `Qm.n` number consists of $m$ integer bits and $n$ fractional bits, with $m+n$ bits total (or $1+m+n$ bits for signed values). Its value would be the usual base-2 intepretation of its integer component, plus the fractional component scaled by a factor of $\frac{1}{2^n}$.
 
 Returning to our `cube0.shp` data, the first two bytes of the `0x120` section are <ByteSpan data={[0xb6, 0x1a]} />, which as an `s16` is $-18,918$. We ideally want to find the number of fractional bits that scales this to a range close to $[-1, 1]$, but since the value is so large, the only 16-bit fixed point format able to do that is `Q0.15`, i.e. one where the _entire number_ is the fractional component. Trying this out, we get:
 
@@ -198,7 +206,7 @@ To me, this is too neat and tidy to be a coincidence, so I think it's worth conc
 
 ## Drawing the rest of the owl
 
-As I mentioned, Jasper determined much of the above pretty quickly, and with some exceptions using pretty similar reasoning. One useful trick he mentioned using was cutting out the `0x120` section into a new hex editor window and playing with the column width until values sorta "lined up" in a way he expected.
+As I mentioned, Jasper determined much of the above pretty quickly, and with some exceptions using pretty similar reasoning. One other useful trick he mentioned using was cutting out the `0x120` section into a new hex editor window and playing with the column width until values sorta "lined up" in a way he expected.
 
 For example, by using a column width of 2 bytes (making each row a single `s16`), he could quickly see the numbers alternated between just two values. Then, by switching to a column width of 6 (making each row an $(x,y,z)$ coordinate, he saw the 8 positions which resembled the telltale pattern of a cube (i.e. all possible $(x,y,z)$ combinations of those two values).
 
@@ -208,7 +216,7 @@ Then, he noticed the ordering of the `u32` offsets in the header starting at `0x
 
 <HexEditor file={CTData.cube0Shp} littleEndian={false} startOffset={0xcc} displayLength={0x40} />
 
-It starts with `0x120`, which we know is our position data, followed by `0x0`, then `0x160` which we're guessing is color data, then another `0x0`, and then `0x180` which seems to be some other numeric attribute data. Wouldn't it be nice if these 12 values corresponded to the 12 vertex attributes? Then, we'd have:
+It starts with `0x120`, which we know is our position data, followed by `0x0`, then `0x160` which we're guessing is color data, then another `0x0`, and then `0x180` which seems to be some other numeric attribute data. After that, we have enough null bytes to account for (at least) 6 more `0x0` values. Now, wouldn't it be nice if these 12 values corresponded to the 12 vertex attributes? Then, we'd have:
 
 <Table
     header={['No.', 'Offset', 'GCN Vertex Attribute']}
@@ -225,7 +233,7 @@ It starts with `0x120`, which we know is our position data, followed by `0x0`, t
     ]}
 />
 
-To be clear, at this point this is just a theory which needs testing. But if we determine the data at `0x180` is plausibly texture coordinates, that'd be a pretty strong argument in its favor, so let's take a look.
+The sections we know definitely seem to line up, but to be clear, at this point this is just a theory which needs testing. However, if we determine the data at `0x180` is plausibly texture coordinates, that'd be a pretty strong argument in its favor, so let's take a look.
 
 ## It's totally in my Q Zone
 
@@ -241,17 +249,17 @@ One thing to know about `uv` coordinates is that both of their components tend t
     signed={false}
 />
 
-It looks like using `Q8.8` yields the best results, with numbers that range from $[0.0039, 0.9921]$. Now, eagle-eyed readers will recognize that this is _not_ $[0, 1]$, but it _is_ close enough that I'd call this a pretty likely theory. Moreover, if we count off our $(u, v)$ pairs, we end up with these coordinates (rounded to the nearest one-thousandth):
+It looks like using `Q8.8` yields the best results, with numbers that range from $[0.0039, 0.9921]$. Now, eagle-eyed readers will recognize that this is _not_ $[0, 1]$, but it _is_ close enough that I'd call this a pretty likely theory. Moreover, if we count off our $(u, v)$ pairs and do a little rounding, we end up with these coordinates:
 
-* $(0.004, 0.992)$
-* $(0.004, 0.5)$
-* $(0.5, 0.004)$
-* $(0.488, 0.004)$
-* $(0.004, 0.004)$
+* $(0, 1)$
+* $(0, 0.5)$
+* $(0.5, 0)$
+* $(0.5, 0)$
+* $(0, 0)$
 
-Which, if we squint our eyes and do some creative rounding, yields points that are promisingly distributed in the `uv` coordinate space.
+Which yields points that are rather neatly distributed in the `uv` coordinate space! Even with the rounding, it's pretty unlikely that we'd get numbers this neat by happenstance, so I'd say our theory that the `0x180` data are texture coordinates passes the sniff test.
 
-Now, without knowing what this cube's texture is, it's hard to say what this will end up looking like, but at this point I'd say our theory of each section being a vertex attribute stream is worth codifying into a struct. Again, I'm using the lovely Rust library [deku](https://docs.rs/deku/latest/deku/) to turn our struct into something that can parse binary data:
+Which also means our grander theory that each header offset at `0xcc` points to a vertex attribute stream passes muster, so let's test it with some parsing code. Again, I'm using the lovely Rust library [deku](https://docs.rs/deku/latest/deku/) to turn our struct into something that can parse binary data:
 
 ```rust
 #[derive(DekuRead)]
@@ -274,15 +282,17 @@ pub struct ShpHeader {
 }
 ```
 
-Note that for brevity's sake, I abbreviated a large number of `unk` fields between `version` and `pos_offset` into a block of `0xc8` bytes. When I was actually working on this, I listed about 20 `unk` fields in that section which we'll return to in the next post. Also, the header ends with four other offset values, one of which seems to be the same value as `pos_offset` and another goes to the list of texture names, so I noted those in the field names.
+Note that for brevity's sake, I abbreviated a large section of unknown data between `version` and `pos_offset` into a block of `0xc8` bytes. When I was actually working on this, I listed about 20 `unk` fields in that section which we'll return to in the next post. Also, the header ends with four other offset values, one of which seems to be the same value as `pos_offset` and another goes to the list of texture names, so I noted those in the field names.
 
 ## Keeping it on the DL
 
-Thus far, we've developed a theory that's accounted for three of the sections we identified in our `.shp` file, and bit of the header data: starting at offset `0xcc` in the header, there are 12 offsets which appear to correspond to the 12 vertex attribute streams that GX allows in a draw call. But we're still missing a key ingredient: the draw call itself. So let's dig a bit deeper into what GCN draw calls look like.
+Thus far, our theorized `.shp` format accounts for the 12 possible vertex attribute streams allowed in rendering a model on GCN: positions, normals, colors, and texture coordinates. It also has identified a list of texture names that probably correspond to those texture coordinates. But we're still missing a key ingredient: the draw call itself. So let's dig a bit deeper into what GCN draw calls look like.
 
-As a reminder, draw calls are submitted to the GX library in the form of Display Lists (DLs). These start with a header byte whose first 5 bits identify the type of call, and whose latter 3 bits are the vertex data's Vertex Attribute Table (VAT) index. If you're familiar with bitwise logic operations, you can think of this header byte as `CALL_TYPE | VAT_INDEX`.
+As a reminder, draw calls are submitted to the GX library in the form of Display Lists (DLs). And luckily for us, the GX manual specifies the DL format precisely!
 
-The VAT entry at that offset describes how many attributes we've submitted (let's call that number $a$), as well as the format of each attribute stream (e.g. `f32`, `Q015`, etc). After the header byte is then followed by a `u16` representing the number of vertices (let's call this $v$), which is then followed by a stream of $a*v$ indices (one per attribute, per vertex).
+DLs start with a header byte whose first 5 bits identify the type of call, and whose latter 3 bits are the vertex data's Vertex Attribute Table (VAT) index. You can think of this header byte as a bitwise OR of the two values: `CALL_TYPE | VAT_INDEX`. And as we covered earlier, the VAT entry at `VAT_INDEX` specifies how many of the 12 attributes we're using in our vertex data; let's call that number $a$.
+
+After the header byte is a `u16` representing the number of vertices; let's call this $v$. Then, we have a stream of $a*v$ indices: one per attribute, per vertex.
 
 <Aside>
 
@@ -296,13 +306,17 @@ But in GCN, the color buffer can just contain the single $C_0$ value, and each v
 
 </Aside>
 
-Pretty early on, Jasper spotted that the data starting at `0x240` looked a lot like index data:
+Pretty early on, Jasper spotted that the data starting at `0x240` looked a lot like DL data:
 
 <HexEditor file={CTData.cube0Shp} littleEndian={false} startOffset={0x240} displayLength={0x100} />
 
-Visually, it looks like there's a bunch of 2-byte values which seem to increase sequentially, but if you interpret them as big-endian `u16`s as you might expect, we get large and non-sequential values. However, Jasper also noticed that the first couple bytes (<ByteSpan data={[0x93, 0x00, 0x18]} />) didn't quite fit the pattern. Cue some GCN-specific knowledge: one of the more common types of draw calls, `GX_DRAW_TRIANGLES`, has a starting byte equal to `0x90`. If we suppose that `cube0.shp` uses the VAT index `0x03`, then a `GX_DRAW_TRIANGLES` DL _would_ start with `0x93`. Then, interpreting the next two bytes as a `u16` gives us a vertex count of 24, and every other 2-byte value reads as an index-like low `u16` value.
+Initially, this sorta looks like `u16` index data, since visually the byte values are somewhat small and increase sequentially. But these values are only small if read as _little-endian_ values, which wouldn't fit the rest of the file (or the GCN architecture, for that matter). What if instead this was a DL, and thus all of the `u16`s are offset by the 1 header byte? That'd give us small and sequential big-endian values starting at `0x241`.
 
-So let's do some back-of-the-napkin math here. We know that we have $a=3$ attributes and $v=24$ vertices, so we'd expect to see $3 * 24 = 72$ indices after the first three bytes. At 2 bytes per `u16`, that means $72 * 2 = 144$ bytes. Adding 144 bytes to our starting offset of `0x240`, plus the "header" section of three bytes, gives us a predicted ending offset at `0x2d3`, which is just about exactly where the stream of indices ends! And, looking forward to offset `0x2e0`, it looks like there's _yet another_ `GX_DRAW_TRIANGLES` DL, and the math works out similarly well there.
+Cue some GCN-specific knowledge: one of the more common types of draw calls, `GX_DRAW_TRIANGLES`, has a starting byte equal to `0x90`. If we suppose that `cube0.shp` uses the VAT index `0x03`, then a `GX_DRAW_TRIANGLES` DL _would_ start with `0x93`. Then, interpreting the next two bytes as a `u16` gives us a vertex count of $v=24$, and every other 2-byte value reads as an index-like low `u16` value.
+
+So let's do some back-of-the-napkin math here. We know that we have $a=3$ attributes (one for each section we've identified: position, color, and texture coordinates), so we'd expect to see $a * v = 3 * 24 = 72$ indices after the first three bytes. At 2 bytes per `u16` index, that means $72 * 2 = 144$ bytes. And, adding 144 bytes to our starting offset of `0x240`, plus the "header" section of three bytes, gives us a predicted ending offset at `0x2d3`, which is just about exactly where the stream of indices ends! So it's seemingly quite likely that we've got a `GX_DRAW_TRIANGLES` DL command here.
+
+And interestingly, looking ahead to offset `0x2e0`, it looks like there's _yet another_ `GX_DRAW_TRIANGLES` DL, and the math works out similarly well there.
 
 Putting this all together, it seems that the data starting at `0x240` is a series of DLs that continue all the way until the `texture_list_offset` section at `0x340` begins. With this observation, we can put a name to another of the offset fields:
 
