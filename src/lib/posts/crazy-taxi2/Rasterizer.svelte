@@ -20,7 +20,7 @@
     const light = vec3.create();
     const lightColor = vec3.fromValues(1, 1, 1);
     let wireframeMode = $derived(
-        selectedPoints.length > 0 || selectedNormals.length > 0 || selectedTris.length > 0
+        selectedPoints.length > 0 || selectedTris.length > 0
     );
 
     const scratchVec4 = vec4.create();
@@ -125,17 +125,24 @@
             viewPoints.push(vert);
         }
 
-        const viewNormals: vec3[] = [];
-        for (const norm of normals) {
-            const norm4 = vec4.set(scratchVec4, norm[0], norm[1], norm[2], 0);
-            vec4.transformMat4(norm4, norm4, normViewFromModel);
-            const transformedNormal = vec3.fromValues(norm4[0], norm4[1], norm4[2]);
-            vec3.normalize(transformedNormal, transformedNormal);
-            vec3.scale(transformedNormal, transformedNormal, 1/5);
-            viewNormals.push(transformedNormal);
+        if (selectedNormals.length > 0 && selectedTris.length === 0) {
+            for (const i of selectedNormals) {
+                drawWorldSpaceArrow(
+                    ctx,
+                    viewFromModel,
+                    viewportFromView,
+                    [-0.1, -0.1, -0.1],
+                    normals[i],
+                    undefined,
+                    5,
+                    'green',
+                    0.5,
+                );
+            }
         }
 
         for (let i=0; i<tris.length; i++) {
+            if (selectedNormals.length > 0 && selectedPoints.length === 0 && selectedTris.length === 0) continue;
             const [[vi0, ni0], [vi1, ni1], [vi2, ni2]] = tris[i];
             const v0 = vec3.transformMat4(scratchVec3A, viewPoints[vi0 - 1], viewportFromView);
             const v1 = vec3.transformMat4(scratchVec3B, viewPoints[vi1 - 1], viewportFromView);
@@ -154,10 +161,10 @@
             ctx.closePath();
 
             if (triSelected) {
-                ctx.strokeStyle = 'green';
+                ctx.strokeStyle = 'black';
                 ctx.lineWidth = 3;
                 stroke = true;
-                ctx.fillStyle = 'green';
+                ctx.fillStyle = 'DarkGreen';
                 fill = true;
             } else if (wireframeMode) {
                 ctx.strokeStyle = 'black';
@@ -193,7 +200,7 @@
                     undefined,
                     3,
                     'green',
-                    0.2,
+                    0.3,
                 );
             }
         }

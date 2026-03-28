@@ -33,7 +33,7 @@ But why do I think `.shp` files have anything to do with models? Well for one, `
 * Besides `cube0.shp`, all the other `.shp` files live in archive files with names like `polDC0.all`, `polDC1.all`, etc., whose prefix `pol` kinda suggests the word "polygon"
 * The 2,744 `.shp` files within those archives have names like `CZ_train_B.shp`, `course_4_129.shp`, `CZ_IMPALA.shp`, which all seem like reasonable names for game models
 
-Running with the "`.shp` == shape" theory, and assuming `cube0.shp` indeed contained a cube's geometry in some Crazy Taxi format, analyzing that file seemed like a great first step to cracking this nut.
+Running with this theory, and assuming `cube0.shp` indeed contained a cube's geometry in some Crazy Taxi format, analyzing that file seemed like a great first step to cracking this nut.
 
 ## Rosetta Cube
 
@@ -47,11 +47,17 @@ Now, you don't need to become an expert in `.obj` files to understand the rest o
 
 In `.obj` files, all data is stored as plaintext lines, prefixed by one or two letters to indicate the type of data it is. For our purposes, we'll only focus on three of these:
 * **Vertex positions:** shapes in 3D graphics are made up of points, called vertices, and the most important feature of a vertex is its position. Positions starts with a `v` and are followed by their $(x, y, z)$ coordinates.
-* **Vertex normals:** a [vertex normal](https://en.wikipedia.org/wiki/Vertex_normal) starts with `vn` and is also followed by $(x, y, z)$ coordinates, but instead of defining a point, these define a _vector_, which is math's version of an arrow. Normal vectors can be somewhat counterintuitive if you haven't dealt with them before, but basically, they define the direction a surface is facing at some point.
+* **Vertex normals:** a [vertex normal](https://en.wikipedia.org/wiki/Vertex_normal) starts with `vn` and is also followed by $(x, y, z)$ coordinates, but instead of defining a point, these define a _vector_, which is math's version of an arrow. Normal vectors can be somewhat counterintuitive if you haven't dealt with them before, but basically, they define the direction a surface is facing at some point. This is crucial for adding lighting to a scene, since by knowing which direction a surface faces, we can mathematically "bounce" light off of it and determine how much of that light should reach the viewer.
 
 <Aside>
 
-As you might know, in computer graphics all shapes are made up of triangles, which always face a single direction, and thus have an implicit normal vector. So, wouldn't any normal vectors we provide be superfluous? Well, by letting the vertex's normal vector take any value we want, we can create the illusion of smooth, curved surfaces when lighting a scene. For example, because a modeled sphere can be only be approximated by some number of triangles, it will appear jagged _unless_ you define its vertex normals to always be radial to the sphere's center.
+If you're struggling to imagine how or why normal vectors are used, imagine we're trying to render a 3D sphere. As you may know, in computer graphics we represent all 3D shapes as triangles, so our sphere will tragically need to be approximated by some finite number of triangles, making it jagged.
+
+However, by associating a normal vector to each vertex, and by smoothly transitioning between a triangle's 3 vertex normals, we can associate a nearly-spherical normal vector to every single pixel of that triangle. This is a process called _interpolation_.
+
+Using some basic math to detect the angle between that interpolated normal and the nearest light lets us calculate how brightly to shade that pixel, ultimately letting us produce the illusion of a smoothly curved surface, despite rendering the same number of triangles as our jagged version. This process is called [Phong shading](https://en.wikipedia.org/wiki/Phong_shading):
+
+![Two spheres, the left being rendered with 'flat' surface normals, and the right using radial interpolated normals](/images/crazy-taxi/sphere-normals.jpg)
 
 </Aside>
 
