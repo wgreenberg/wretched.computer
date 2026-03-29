@@ -3,6 +3,7 @@ title: Reverse Engineering Crazy Taxi, Part 1
 description: For some reason I put Crazy Taxi's levels into the browser and You Can Too
 date: 2/28/2026
 published: true
+toc: true
 ---
 
 <script>
@@ -371,4 +372,4 @@ If you'd like to see the non-pseudo version of my archive reader, you can check 
 
 I think that's where I'll leave us for part 1. I realize it's pretty anticlimactic to stop before we've even rendered anything, but considering we started with nothing but an illegible ROM file, having access to each and every game file is actually a pretty substantial accomplishment!
 
-Next time, we'll revisit our old friend `cube0.shp` and attempt to decode the mysteries of the `.shp` file to draw our first game model.
+In [part 2](/post/crazytaxi2), we'll revisit our old friend `cube0.shp` and attempt to decode the mysteries of the `.shp` file to draw our first game model.

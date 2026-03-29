@@ -7,6 +7,12 @@ declare global {
             metadata: Record<string, string>;
 		}
 
+        interface Heading {
+            level: number,
+            title: string,
+            id: string,
+		}
+
         type MdsvexResolver = () => Promise<MdsvexFile>;
 	}
 }

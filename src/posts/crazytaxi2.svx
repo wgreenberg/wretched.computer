@@ -1,8 +1,9 @@
 ---
 title: Reverse Engineering Crazy Taxi, Part 2
 description: Or how I learned to stop worrying and love the cube
-date: 2/16/2026
-published: false
+date: 3/29/2026
+published: true
+toc: true
 ---
 
 <script>
@@ -11,12 +12,17 @@ published: false
     import HexEditor from "$lib/posts/crazy-taxi/HexEditor.svelte";
     import ByteSpan from "$lib/posts/crazy-taxi/ByteSpan.svelte";
     import FixedPointView from "$lib/posts/crazy-taxi/FixedPointView.svelte";
+    import CrazyTaxiPartHeader from "$lib/posts/crazy-taxi/CrazyTaxiPartHeader.svelte";
     import * as CTData from "$lib/posts/crazy-taxi/data.ts";
     import Table from "$lib/components/Table.svelte";
     import Aside from "$lib/components/Aside.svelte";
 </script>
 
+<CrazyTaxiPartHeader currentPart={1}>
+
 This is the second of a series of posts detailing how I put interactive, [3D versions of Crazy Taxi's levels onto the web](https://noclip.website/#crazytaxi/dc1). If you haven't read the [first post](/post/crazytaxi), I'd highly recommend it, since this builds off many of the ideas developed there.
+
+</CrazyTaxiPartHeader>
 
 In part 1, we covered some basic elements of reverse engineering in order to decode Crazy Taxi's `.all` file format, which turned out to be an archive format used to bundle thousands of the game's asset files. I also stressed a couple lessons I've learned while reverse engineering, which I'll go ahead and recap here:
 
