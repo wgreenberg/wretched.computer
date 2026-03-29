@@ -13,7 +13,7 @@
 <div class="prose z-10 prose-green sticky -top-px flex flex-col bg-emerald-900 border-slate-400 border border-dashed border-t-0 m-0 rounded-b p-2 w-full">
     <button onclick={() => expanded = !expanded}>Table of Contents [{expanded ? '-' : '+'}]</button>
     {#if expanded}
-        <ol class="list-inside border border-slate-500 bg-teal-900 overflow-scroll max-h-96 mt-0 ml-0">
+        <ol class="list-inside border border-slate-500 bg-teal-900 overflow-auto max-h-96 mt-0 ml-0">
         {#each headings as heading}
             <li><button onclick={() => onclick(heading)}>{heading.title}</button></li>
         {/each}
