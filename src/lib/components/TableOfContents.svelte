@@ -5,8 +5,7 @@
     function onclick(heading: App.Heading) {
         expanded = false;
         setTimeout(() => {
-            // the ids are suffixed with "-1" for some reason??
-            location.hash = heading.id.slice(0, heading.id.length - 2);
+            location.hash = heading.id;
         }, 0);
     }
 </script>

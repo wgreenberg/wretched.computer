@@ -7,9 +7,8 @@ import GithubSlugger from 'github-slugger';
 import rehypeSlug from 'rehype-slug';
 import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
-const slugger = new GithubSlugger();
-
 function getHeadings() {
+  const slugger = new GithubSlugger();
   let visit;
   let tree_to_string;
   return async function transformer(tree, vFile) {
@@ -23,14 +22,6 @@ function getHeadings() {
     visit(tree, 'heading', (node) => {
       const title = tree_to_string(node);
       const id = slugger.slug(title);
-      // if (node.data === undefined) {
-      //   node.data = {};
-      // }
-      // node.data.id = id;
-      // if (node.data.hProperties === undefined) {
-      //   node.data.hProperties = {};
-      // }
-      // node.data.hProperties.id = id;
       vFile.data.headings.push({
         level: node.depth,
         title,
