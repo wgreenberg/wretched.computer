@@ -1,7 +1,9 @@
 <script lang="ts">
     import MultiPartHeader from "$lib/components/MultiPartHeader.svelte";
-    let { currentPart }: {
+	import type { Snippet } from "svelte";
+    let { currentPart, children }: {
         currentPart: number,
+        children: Snippet,
     } = $props();
 
     const parts = [
@@ -19,5 +21,5 @@
 <MultiPartHeader
     {parts}
     {currentPart}>
-    <slot></slot>
+    {@render children()}
 </MultiPartHeader>
