@@ -16,6 +16,7 @@
     let hasToc = $derived(!!data.metadata.toc);
 </script>
 
+<title>{data.metadata.title}</title>
 <main class="flex flex-col items-center justify-stretch mb-20">
     <TitleBox bottomBorder={!hasToc}>
         <p class="text-sm font-serif m-1">{dateToString(data.metadata.date)}</p>
