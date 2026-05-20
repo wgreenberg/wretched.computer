@@ -37,7 +37,7 @@
     }
 
     :global(.math-display) {
-        @apply bg-[--tw-prose-pre-bg] rounded-md p-1 m-0 overflow-auto shadow-md w-full;
+        @apply bg-(--tw-prose-pre-bg) rounded-md p-1 m-0 overflow-auto shadow-md w-full;
     }
 
     :global(pre) {

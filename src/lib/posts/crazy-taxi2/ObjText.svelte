@@ -47,7 +47,7 @@
     const codeLineHover = "bg-green-900"
 </script>
 
-<div style="--height: {height}px; --width: {width}px" class="code max-w-[--width] max-h-[--height] max-md:rounded-t-md md:rounded-l-md font-mono text-sm flex flex-col items-start overflow-auto">
+<div style="--height: {height}px; --width: {width}px" class="code max-w-(--width) max-h-(--height) max-md:rounded-t-md md:rounded-l-md font-mono text-sm flex flex-col items-start overflow-auto">
     <p class={codeLineClass}>g cube</p>
     <br>
     <div class="flex flex-col items-start">

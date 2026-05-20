@@ -96,7 +96,7 @@
     </div>
 {/snippet}
 
-<div class="flex flex-col p-2 border border-[--tw-prose-th-borders] rounded-md">
+<div class="flex flex-col p-2 border border-(--tw-prose-th-borders) rounded-md">
     <span><u>Dice pool:</u></span>
     <div class="ml-2">
         <DiceCount name="Skirmish" color="bg-blue-500" bind:count={nSkirmish} />
@@ -104,7 +104,7 @@
         <DiceCount name="Raid" color="bg-orange-500" bind:count={nRaid} />
     </div>
     <span><u>Generating function:</u></span>
-    <div class="prose ml-2 prose-green bg-[--tw-prose-pre-bg] rounded-md p-2 m-0 shadow-md" bind:this={formulaElement}></div>
+    <div class="prose ml-2 prose-green bg-(--tw-prose-pre-bg) rounded-md p-2 m-0 shadow-md" bind:this={formulaElement}></div>
     <span><u>Symbols to compare:</u></span>
     <div class="ml-2 prose-green inline-flex space-x-1">
         <label for="a">Symbol 1</label>

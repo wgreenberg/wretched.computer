@@ -174,7 +174,7 @@
     </div>
     <div class="flex flex-col prose prose-green">
         {#each posts as post}
-            <div class="border-[1px] m-1 p-2">
+            <div class="border m-1 p-2">
                 <div><a href={getUrl(post)}>{post.time}</a></div>
                 <div>
                     {#if post.matches && post.matches.length > 0}

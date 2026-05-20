@@ -9,6 +9,6 @@
     <td class="align-middle">{post.date}</td>
     <td class="flex flex-col">
         <a href={getPostPath(post)}><span>{post.title}</span></a>
-        <span class="overflow-ellipsis">{post.description}</span>
+        <span class="text-ellipsis">{post.description}</span>
     </td>
 </tr>
