@@ -16,6 +16,7 @@ toc: true
     import * as CTData from "$lib/posts/crazy-taxi/data.ts";
     import Table from "$lib/components/Table.svelte";
     import Aside from "$lib/components/Aside.svelte";
+    import Image from "$lib/components/Image.svelte";
 </script>
 
 <CrazyTaxiPartHeader currentPart={1}>
@@ -47,7 +48,7 @@ Cubes, as you might know, are pretty simple shapes. After the humble triangle, t
 
 To inform our investigation into the `.shp` file, let's review some standard elements used to store 3D geometry using a well-known, plaintext file format: the [Wavefront .obj file](https://en.wikipedia.org/wiki/Wavefront_.obj_file). Since `.obj` files are plaintext, they're pretty inefficient in terms of filesize, but their simplicity and ease of editing have made them so prolific that even macOS' builtin file previewer has a full renderer for them:
 
-![Previewing a cube using macOS Finder](/images/crazy-taxi/cube.png)
+<Image caption="Previewing a cube using macOS Finder" src="/images/crazy-taxi/cube.png" />
 
 Now, you don't need to become an expert in `.obj` files to understand the rest of this post, but the format's simplicity makes it a great subject to analyze some of the more universally-used concepts in 3D modeling.
 
@@ -63,7 +64,7 @@ However, by associating a normal vector to each vertex, and by smoothly transiti
 
 Using some basic math to detect the angle between that interpolated normal and the nearest light lets us calculate how brightly to shade that pixel, ultimately letting us produce the illusion of a smoothly curved surface, despite rendering the same number of triangles as our jagged version. This process is called [Phong shading](https://en.wikipedia.org/wiki/Phong_shading):
 
-![Two spheres, the left being rendered with 'flat' surface normals, and the right using radial interpolated normals](/images/crazy-taxi/sphere-normals.jpg)
+<Image caption="Two spheres, the left being rendered with 'flat' surface normals, and the right using radial interpolated normals" src="/images/crazy-taxi/sphere-normals.jpg" />
 
 </Aside>
 
@@ -138,7 +139,7 @@ The GameCube (or GCN, which was Nintendo's official abbreviation for the platfor
 
 Here's a slide from a Nintendo keynote titled ["NINTENDO GAMECUBE: The Ultimate Video Game Machine"](https://cubemedia.ign.com/media/news/documents/embeddedforumkeynote.pdf) which very broadly outlines the flow of the Flipper GPU's fixed function pipeline:
 
-![The GameCube's fixed function pipeline](/images/crazy-taxi/gcn-gpu-arch.png)
+<Image caption="The GameCube's fixed function pipeline" src="/images/crazy-taxi/gcn-gpu-arch.png" />
 
 While not particularly illuminating, it does demonstrate a few of the key steps involved in converting model data into pixels.
 

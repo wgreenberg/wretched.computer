@@ -32,6 +32,7 @@
 </main>
 
 <style>
+@reference "tailwindcss";
     :global(.frac-line) {
         border-color: --tw-prose-body;
     }

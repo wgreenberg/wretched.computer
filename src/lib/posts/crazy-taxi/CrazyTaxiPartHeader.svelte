@@ -15,6 +15,10 @@
             title: "Part 2: Reversing shape files",
             url: "/post/crazytaxi2"
         },
+        {
+            title: "Part 3: Rendering every shape file",
+            url: "/post/crazytaxi3"
+        },
     ]
 </script>
 

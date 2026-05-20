@@ -94,6 +94,7 @@
 </div>
 
 <style>
+    @reference "tailwindcss";
     .code {
         background: #002b36;
         color: #839496;

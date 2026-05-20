@@ -17,9 +17,10 @@ let {
 
 let innerWidth = $state(500);
 let hiddenHeaderBytes = $derived(startOffset);
-let hiddenFooterBytes = $derived(file.totalLength - (startOffset + displayLength));
+let actualDisplayLength = $derived(startOffset + displayLength > file.data.length ? file.data.length - startOffset : displayLength);
+let hiddenFooterBytes = $derived(file.totalLength - (startOffset + actualDisplayLength));
 let nCols = $derived(innerWidth < 500 ? 8 : 16);
-let nRows = $derived(Math.ceil(displayLength / nCols));
+let nRows = $derived(Math.ceil(actualDisplayLength / nCols));
 let highlightStart: number = $state(Infinity);
 let highlightEnd: number = $state(-Infinity);
 let bytes = $derived(new Uint8Array(file.data));

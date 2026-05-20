@@ -1,0 +1,23 @@
+---
+title: Reverse Engineering Crazy Taxi, Part 4
+description:
+date: 3/29/2026
+published: false
+toc: true
+---
+
+## Outline
+
+1. Finding model matrix
+1. Restate my assumptions (shp header's f32s are scale + bounding box)
+1. plotting all shps results in some being placed at the origin, and others getting scattered around: https://discord.com/channels/@me/284874706576867329/1461249361601101907
+    * means that some are in model space, and some maybe have their transforms baked into their positions
+    * seem to be messed up a bit though https://discord.com/channels/@me/284874706576867329/1461249845611466822
+    * the baked ones all appear to be VTXFMT1
+1. hunting for the position/rotation/scale for the others
+1. Looking in main.dol for big blocks of f32s and plotting them: https://discord.com/channels/@me/284874706576867329/1461055617732182046
+    * some seem clearly to be polygonal outlines, maybe delivery zones
+    * eyeballing the map, it looks like the others are only along roads
+    * no obvious way to map these to our shps, though, and the numbers don't quite line up https://discord.com/channels/@me/284874706576867329/1462265105155887375
+1. where else could it be? try plotting the bounding boxes -- wrong!
+    * try plotting them all as positions, see what we get. some are clearly positiony, others aren't (maybe scale or rotation?)

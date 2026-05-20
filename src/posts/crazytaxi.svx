@@ -11,6 +11,7 @@ toc: true
     import ByteSpan from "$lib/posts/crazy-taxi/ByteSpan.svelte";
     import * as CTData from "$lib/posts/crazy-taxi/data.ts";
     import Table from "$lib/components/Table.svelte";
+    import Image from "$lib/components/Image.svelte";
 </script>
 
 <video controls preload="metadata">
@@ -54,7 +55,7 @@ Let's take a second to talk about our tools. While I'm by no means prescriptive 
 
 At last, we're ready to start looking at some bytes. The Crazy Taxi ROM I have, `Crazy Taxi (USA).rvz`, is about 90MB, which is considerably smaller than the average GameCube ROM at 1.4GB. While I could load this up into a hex editor and get to sleuthin', I happen to already know that `.rvz` is a file format used by the Dolphin project as a more compact alternative to `.iso`, another disc image format. And luckily, Dolphin has a way to open and extract these: set the ROM's directory as Dolphin's game directory, right-click on the game and select Properties, then click on the Filesystem tab:
 
-![Dolphin's Filesystem view](/images/crazy-taxi/dolphin-filesystem.png)
+<Image caption="Dolphin's Filesystem view" src="/images/crazy-taxi/dolphin-filesystem.png" />
 
 From here, you can right-click on "Disc 1 - GCTE51", and then extract the entire disc somewhere on your computer. Great, now we're actually able to read some game data!
 
@@ -368,7 +369,7 @@ for entry in header.toc:
 
 If you'd like to see the non-pseudo version of my archive reader, you can check out my Rust implementation [here](https://github.com/magcius/noclip.website/blob/8f31a80ca462cc596017e3bf63caee7c82a1a677/rust/src/crazytaxi/archive.rs). Running a real Rusty version of the above, we end up with all of the game files extracted neatly into their archive directories:
 
-![An extracted archive file](/images/crazy-taxi/extracted-archive.png)
+<Image caption="An extracted archive file" src="/images/crazy-taxi/extracted-archive.png" />
 
 I think that's where I'll leave us for part 1. I realize it's pretty anticlimactic to stop before we've even rendered anything, but considering we started with nothing but an illegible ROM file, having access to each and every game file is actually a pretty substantial accomplishment!
 

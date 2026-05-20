@@ -9,6 +9,7 @@ toc: true
 <script>
     import Table from "$lib/components/Table.svelte";
     import Calculator from "$lib/posts/arcs-dice/Calculator.svelte";
+    import Image from "$lib/components/Image.svelte";
     import katex from 'katex';
 
     function l(s) {
@@ -20,13 +21,13 @@ I've recently gotten very into Leder Games/Cole Wherle's newest board game, Arcs
 
 One of these mechanics is its system of building dice pools. Whenever you send your ships into combat in Arcs, you assemble a dice pool of one die per ship, and resolve the combat in a single roll. What makes this such an interesting bit of decisionmaking is the different types of dice you can pull from for your pool.
 
-![Arcs' Assault, Raid, and Skirmish dice](/images/arcs-dice/dice-stolen.jpg)
+<Image caption="Arcs' Assault, Raid, and Skirmish dice" src="/images/arcs-dice/dice-stolen.jpg" />
 
 Each die has a different utility and risk profile: blue Skirmish dice are basically a coin flip for whether you'll score _hits_ against your enemy, and carry no risk of harming your own ships. The red Assault dice can do considerably more damage to the enemy, but with a higher chance of blowing up your fleet with _self-hits_ and _intercepts_. And the orange Raid dice carry the most risk of self-hits, as well as chances of blowing up enemy buildings (which can be good or bad), but importantly are the only dice which let you roll _keys_, the game's way of stealing goodies from your opponent.
 
 Building your dice pool is an exercise in risk management: how many of your own ships can you afford to blow up to get what you want? With the exception of blue Skirmish dice, the symbols are unevenly allocated over the faces of each die, making for some dramatic dice rolls. For future reference, here's the layout of each die from the game's manual:
 
-![Diagram of Arcs' Assault, Raid, and Skirmish dice](/images/arcs-dice/dice.png)
+<Image caption="Diagram of Arcs' Assault, Raid, and Skirmish dice" src="/images/arcs-dice/dice.png" />
 
 Now to be clear, I don't think Cole Wherle intended players to perform exacting calculations of the odds for every dice pool. The gist of the mechanic is that one die is safe, one is risky, and one is _real risky_, so plan accordingly.
 
@@ -228,7 +229,7 @@ We just need one more tool before tackling the dice in Arcs: a way of handling m
 
 And for ease of reference, here are the layouts of each die:
 
-![Diagram of Arcs' Assault, Raid, and Skirmish dice](/images/arcs-dice/dice.png)
+<Image caption="Diagram of Arcs' Assault, Raid, and Skirmish dice" src="/images/arcs-dice/dice.png" />
 
 How can we represent these? One possiblity might be to create separate generating functions for each type of symbol appearing on each die. So the Assault die would have a hit function, a self-hit function, and an intercept function. But this approach incorrectly treats the different pip types as independent from one another, and would fail to account for the fact that the 1 intercept symbol on Assault dice can only ever be paired with the single hit symbol.
 
