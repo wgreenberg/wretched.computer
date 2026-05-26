@@ -4,16 +4,23 @@
 
     let { block }: { block: Block } = $props();
 
+    function paddedRadix(n: number, radix: number, desiredLength: number): string {
+        let result = n.toString(radix);
+        while (result.length < desiredLength) {
+            result = '0' + result;
+        }
+        return result;
+    }
+
     function getBitstring(data: number[]): string {
         let result = '';
         for (const byte of data) {
-            result += byte.toString(2);
+            result += paddedRadix(byte, 2, 8);
         }
         return result;
     }
     function getHexCode(color: [number, number, number]): string {
-        return '#' + color.map(c => c.toString(16))
-            .map(c => c.length === 1 ? '0' + c : c)
+        return '#' + color.map(c => paddedRadix(c, 16, 2))
             .reduce((x, a) => x + a, '');
     }
     let bitstring = $derived(getBitstring(block.bytes))
