@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { onMount } from "svelte";
 	import ByteSpan from "../crazy-taxi/ByteSpan.svelte";
 import type { FileData } from "../crazy-taxi/data";
 	import CmprDecoderBody from "./CmprDecoderBody.svelte";
+	import CmprDecoderImage from "./CmprDecoderImage.svelte";
 
     let { file, enableMips = false }: {
         file: FileData,
@@ -12,7 +14,11 @@ import type { FileData } from "../crazy-taxi/data";
     let height = $derived(dataView.getUint32(0x4, false));
     let numBlocks = $derived(width * height / 16);
     let format = $derived(dataView.getUint32(0xc, false));
-    let selectedBlock: number | undefined = $state(undefined);
+    let selectedBlock = $state(0);
+    // onMount(() => {
+    //     const selectedBlockElement = document.getElementById("cmpr-blocks")!.children[selectedBlock];
+    //     selectedBlockElement.scrollIntoView();
+    // });
     $effect(() => {
         if (format !== 0xe) {
             throw new Error(`invalid format ${format}`);
@@ -46,11 +52,12 @@ import type { FileData } from "../crazy-taxi/data";
     }
 
     function byteToPixelOffsets(n: number): number[] {
+        const byte = dataView.getUint8(n);
         let result = [];
-        result.unshift(n & 3);
-        result.unshift((n >> 2) & 3);
-        result.unshift((n >> 4) & 3);
-        result.unshift((n >> 6) & 3);
+        result.unshift(byte & 3);
+        result.unshift((byte >> 2) & 3);
+        result.unshift((byte >> 4) & 3);
+        result.unshift((byte >> 6) & 3);
         return result;
     }
 
@@ -70,7 +77,6 @@ import type { FileData } from "../crazy-taxi/data";
         colors.push(rgb565ToRGB(color0Raw));
         let color1Raw = dataView.getUint16(offset + 2, false);
         colors.push(rgb565ToRGB(color1Raw));
-        let pixels = byteToPixelOffsets(offset + 4);
         colors.push([0, 0, 0]);
         colors.push([0, 0, 0]);
         if (color0Raw > color1Raw) {
@@ -92,6 +98,7 @@ import type { FileData } from "../crazy-taxi/data";
             ];
         }
 
+        let pixels = byteToPixelOffsets(offset + 4);
         pixels = pixels.concat(byteToPixelOffsets(offset + 5));
         pixels = pixels.concat(byteToPixelOffsets(offset + 6));
         pixels = pixels.concat(byteToPixelOffsets(offset + 7));
@@ -121,21 +128,19 @@ import type { FileData } from "../crazy-taxi/data";
     });
 </script>
 
-<div class="flex flex-row prose-sm w-full max-h-96">
-    <div class="overflow-scroll px-1 flex flex-col">
-        {#each { length: numBlocks }, i}
-        <div class="p-1 {selectedBlock == i ? "bg-red-800" : ""}">
-            <button onclick={() => selectedBlock = i}>
+<div class="flex flex-col prose-sm bg-gray-600">
+    <div class="flex flex-row border-dotted border rounded-t-lg p-1">
+        <div id="cmpr-blocks" class="overflow-scroll max-h-64 px-1 flex flex-col bg-gray-700">
+            {#each { length: numBlocks }, i}
+            <button class="p-1 {selectedBlock == i ? "bg-green-950" : ""}" onclick={() => selectedBlock = i}>
                 Block {i}
             </button>
+            {/each}
         </div>
-        {/each}
+        <CmprDecoderBody block={blocks[selectedBlock]} />
     </div>
-    <div>
-        {#if selectedBlock === undefined}
-            <span>Select a block</span>
-        {:else}
-            <CmprDecoderBody block={blocks[selectedBlock]} />
-        {/if}
+    <div class="border-dotted border rounded-b-lg p-1 border-t-0 flex flex-col items-center">
+        <span>Result texture:</span>
+        <CmprDecoderImage {width} {height} {blocks} {selectedBlock} />
     </div>
 </div>

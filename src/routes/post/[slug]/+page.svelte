@@ -19,9 +19,9 @@
 <title>{data.metadata.title}</title>
 <main class="flex flex-col items-center justify-stretch mb-20">
     <TitleBox bottomBorder={!hasToc}>
-        <p class="text-sm font-serif m-1">{dateToString(data.metadata.date)}</p>
-        <h2 class="text-center font-serif m-1">{data.metadata.title}</h2>
-        <h4 class="m-1 text-center italic w-4/5">{data.metadata.description}</h4>
+        <p class="text-sm font-serif">{dateToString(data.metadata.date)}</p>
+        <h2 class="mt-0 text-center font-serif">{data.metadata.title}</h2>
+        <h4 class="text-center italic w-4/5">{data.metadata.description}</h4>
     </TitleBox>
     {#if hasToc}
         <TableOfContents headings={data.headings} />
@@ -38,7 +38,7 @@
     }
 
     :global(.math-display) {
-        @apply bg-(--tw-prose-pre-bg) rounded-md p-1 m-0 overflow-auto shadow-md w-full;
+        @apply bg-(--tw-prose-pre-bg) rounded-md p-1 mb-2 m-0 overflow-auto shadow-md w-full;
     }
 
     :global(pre) {

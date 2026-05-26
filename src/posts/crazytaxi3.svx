@@ -1,6 +1,6 @@
 ---
 title: Reverse Engineering Crazy Taxi, Part 3
-description: Turning bytes into Pizza Huts
+description: Turning bytes into brands
 date: 3/29/2026
 published: false
 toc: true
@@ -10,6 +10,7 @@ toc: true
     import HexEditor from "$lib/posts/crazy-taxi/HexEditor.svelte";
     import ByteSpan from "$lib/posts/crazy-taxi/ByteSpan.svelte";
     import CmprDecoder from "$lib/posts/crazy-taxi3/CmprDecoder.svelte";
+    import AliasDemo from "$lib/posts/crazy-taxi3/AliasDemo.svelte";
     import CrazyTaxiPartHeader from "$lib/posts/crazy-taxi/CrazyTaxiPartHeader.svelte";
     import * as CTData from "$lib/posts/crazy-taxi/data.ts";
     import Table from "$lib/components/Table.svelte";
@@ -23,27 +24,17 @@ This is the third of a series of posts detailing how I put interactive, [3D vers
 
 </CrazyTaxiPartHeader>
 
-## Outline
+By the end of [Part 2](/post/crazytaxy2), we'd covered quite a bit of ground: learning about how 3D models are stored as vertex attributes, how those attributes are represented in the GameCube's Graphics Library (a.k.a. GX), and how Crazy Taxi's `.shp` file format contains the GX Display Lists that describe how to draw a model. After all of this, we were only able to render one measly cube.
 
-1. Recap, Pizza Hut preview
-1. Textures
-1. cube0.shp's VAT doesn't work for pizza hut
-1. Ghidra exploration to find GXFIFO
-1. Dolphin's FIFO Player, enumerating VATs
+And we didn't even cover everything need to do that! I skipped over how Jasper, [noclip.website](https://noclip.website)'s creator, reverse engineered the texture format, and didn't really touch on how noclip turns GX DisplayLists into WebGL/WebGPU calls that can be rendered in the browser.
 
-When we left off in [Part 2](/post/crazytaxy2), we'd covered a lot of ground learning about how 3D models are stored as vertex attributes, how those attributes are represented in the GameCube's Graphics Library (a.k.a. GX), and how Crazy Taxi's `.shp` file format contains GX Display Lists which describe how to draw a model. After all of this, we were able to render 1 (one) cube.
+In this post, we'll right some of those wrongs by exploring a much more complicated `.shp` model, and by the end of this we should be able to render any of Crazy Taxi's 2,700+ models. And as for which model to target, for my money, there's really only one choice:
 
-And we didn't even cover everything need to do that! I skipped over how Jasper, [noclip.website](https://noclip.website)'s creator, reversed the texture format, and didn't really touch on how noclip turns GX DisplayLists into WebGL/WebGPU calls that can be rendered in the browser.
-
-In this post, we'll right some of those wrongs by exploring a much more complicated `.shp` model, and by the end of this post we should have all the tools we need to render any of the 2,700 or so models in the game.
-
-And for my money, there was only one choice for which model to target:
-
-<Image caption="Pizza Hut, floating in the limbo of noclip" src="/images/crazy-taxi/pizza-hut-solo.png" />
+<Image caption="Pizza Hut, serenely floating in the limbo of noclip" src="/images/crazy-taxi/pizza-hut-solo.png" />
 
 ## Finding the hut
 
-To be honest, rendering Crazy Taxi's Pizza Hut was kinda priority number 1 for me when I got started with this project. I can't exactly say why, but the idea of painstakingly recreating this egregious example of product placement was just really funny to me. Also, because it and the KFC, FILA, and Tower Records models [all got de-branded in later versions of the game](https://en.wikipedia.org/wiki/Crazy_Taxi#Setting) due to licensing issues, it made this process a bizarre case of consumerist preservation.
+To be honest, rendering Crazy Taxi's Pizza Hut was kinda priority number 1 for me when I got started with this project. I can't exactly say why, but the idea of painstakingly recreating this egregious example of product placement was just really funny to me. Also, because Pizza Hut, KFC, FILA, and Tower Records models [all got de-branded in later versions of the game](https://en.wikipedia.org/wiki/Crazy_Taxi#Setting) due to licensing issues, it made this process a bizarre case of consumerist preservation.
 
 <Image caption="'Pizza Parlor' in the Xbox Live Arcade port, via Reddit user u/tejojo" src="/images/crazy-taxi/pizza-parlor.webp" />
 
@@ -72,7 +63,7 @@ TT_PizzaHut_log_01_tr.tex
 
 So it looks like we have two `.shp` models that contain a Pizza Hutty logo (I'm assuming that's what "log" is trying to indicate here). At first it might seem odd that there's _two_ Pizza Hut models, but if you've played the console version of Crazy Taxi, you might already know why that is.
 
-When Crazy Taxi was originally ported from arcades to consoles, it touted both the original "Arcade Mode" map from arcade cabinets, as well as a new and much larger map for the confusingly-named "Original Mode". And both maps contain a Pizza Hut model with slightly different surroundings:
+When Crazy Taxi was originally ported from arcades to consoles, it touted both the original "Arcade Mode" map from arcade cabinets, as well as a new and much larger map which was confusingly named "Original Mode". And both maps contain a Pizza Hut model with slightly different surroundings:
 
 <Image caption="Pizza Hut in Arcade Mode" src="/images/crazy-taxi/arcade-pizza-hut.png" />
 <Image caption="Pizza Hut in Original Mode" src="/images/crazy-taxi/original-pizza-hut.png" />
@@ -81,7 +72,7 @@ Either model would work just fine for our purposes, but let's see if we can dete
 
 ## Original Recipe
 
-So we know our Pizza Huts are in `poldc1_stream.all` and `poldc2_stream.all`, but after grepping around some more, I couldn't find anything clearly indicating which one of these files corresponds to Arcade Mode and which one's Original Mode. That said, we can definitely make some educated guesses. Here are all the archive files that start with "pol" (which I'm guessing is short for "polygon"):
+So we know our Pizza Huts are in `poldc1_stream.all` and `poldc2_stream.all`, but after grepping around some more, I couldn't find anything clearly indicating which one of these files corresponds to Arcade Mode vs. Original Mode. That said, we can definitely make some educated guesses. Here are all the archive files that start with "pol" (which I'm guessing is short for "polygon"):
 
 ```
 polDC0.all
@@ -93,7 +84,7 @@ poldc3_stream.all
 poldc3.all
 ```
 
-Being that there are 3 main maps in the GameCube version (Arcade, Original, and the Crazy Box collection), my guess was that the "dc1", "dc2", and "dc3" might refer to those, with "DC0" seemingly being the odd one out as it has no `_stream` companion. Maybe it's used for shared models or models used in the main menu.
+Being that there are 3 main maps in the GameCube version (Arcade, Original, and the Crazy Box collection), my guess was that the "dc1", "dc2", and "dc3" might refer to those, with "DC0" seemingly being the odd one out as it has no `_stream` companion. Maybe it's used for shared models, or models used in the main menu?
 
 <Aside>
 
@@ -103,9 +94,9 @@ The `stream` part of the filename probably refers to the technique of streaming 
 
  And, since our Pizza Hut `.shp` files were in archive files referencing `dc1` and `dc2`, I assumed that those might be our Arcade and Original maps.
 
- But is `dc1` the Arcade map, or is `dc2`? Well, I know the Original mode map features a fairly sprawling subway system, and only `poldc2.all` contains models with "train" in their name, so for now let's assume that `dc1` refers to Arcade, and `dc2` refers to Original.
+ But is `dc1` the Arcade map, or is `dc2`? Well, I know the Original mode map features a fairly sprawling subway system, and only `poldc2.all` contains models with "train" in their names, so for now let's assume that `dc1` refers to Arcade, and `dc2` refers to Original.
 
-## TKTK Texture List
+## About those textures
 
 Now that we've got a handle on which `.shp` represents the Arcade Mode's Pizza Hut, I'd like to finally demystify how we parsed the textures in the previous post's cube model. But first, how do we find a model's textures?
 
@@ -113,21 +104,21 @@ Recall that our `.shp` file contains not only a model's vertex attributes and GX
 
 <HexEditor file={CTData.PizzaHutShp} littleEndian={false} startOffset={0x7c40} />
 
-Unsurprisingly, there's quite a few more textures here than were in `cube0.shp`, and keen eyes might recognize `white.tex` which was also present in `cube0.shp`. Actually, every single `.shp` file's texture list starts with `white.tex`, and frankly I never really figured why. Take a second to scan through this listing and see if you can see a pattern here.
+Unsurprisingly, there's quite a few more textures here than were in `cube0.shp`, and keen eyes might recognize `white.tex`, which was also present in `cube0.shp`. Actually, every single `.shp` file's texture list starts with `white.tex`, and I never really figured why. Take a second to scan through this listing and see if you can see a pattern here.
 
 As I mentioned in the first post, when you're looking at lists of objects in binary, a good first step is to try and determine whether the items have a fixed size or a variable size. If each item starts with an integer-y value, or corresponds to a list of integers elsewhere in the file, it's worth checking whether there's that many bytes of data following it, and whether the pattern repeats from there. If not, there's a decent chance the items are fixed sized.
 
-In this case, the data listing starts with ASCII string data with no clear integer lengths in sight, so the texture names are probably fixed length. Counting ahead from the start of the `white.tex` to the start of the next string yields `0x2c` bytes, and then looking another `0x2c` bytes ahead, we see the start of another string. So that looks to be our block size!
+In this case, the data starts with ASCII string data with no clear integer lengths in sight, so the texture names are probably fixed length. Counting ahead from the start of the `white.tex` to the start of the next string yields `0x2c` bytes, and then looking another `0x2c` bytes ahead, we see the start of another string. So that looks to be our block size!
 
 Finally, whenever ASCII strings are stored in a file, unless they're accompanied by a byte length you can usually assume that they're null-terminated, i.e. the string's end is indicated by a <ByteSpan data={[0]} /> byte. And sure enough, we do see a null byte at the end of each occurrence of `.tex`. But we've also got some random ASCII data strewn after these termination bytes, such as at offsets `0x7ca6` and `0x7cd4`.
 
 While this _might_ be meaningful data, I think this is much more likely to be junk data similar to what we saw at the end of [Part 2, Section 7](http://localhost:5173/post/crazytaxi2#a-return-to-the-cube). And since it always follows the terminating null byte, it's very easy to simply discard this data.
 
-After all of this, we've got an easy way to read off the full list of textures used by this model, so let's try reading one of those textures!
+After all of this, we've got an easy way to read off the full list of textures used by this model. So let's try reading one of them.
 
-## TKTK Texture data
+## Photo Shop
 
-The first texture listed in our Pizza Hut model is called `TT_shop_04.tex`, which we can find in all three of the level texture archives: `texDC1.all`, `texDC2.all`, and `texdc3.all`. Let's take a look at the first chunk of data:
+The first texture listed in our Pizza Hut model is called `TT_shop_04.tex`, which we can find in all three of the level texture archives: `texDC1.all`, `texDC2.all`, and `texdc3.all`. It's possible these are all the same, but since we're targeting the Arcade mode version, let's pick the one from `texDC1.all`. Here's the first chunk of data from the texture file:
 
 <HexEditor file={CTData.TTShop04} littleEndian={false} displayLength={0xa0} />
 
@@ -139,19 +130,23 @@ Once we've got our dimensions, the next step is figuring out what the pixel data
 
 But before we dig into how these pixels are encoded, let's revisit mipmaps, since they'll soon become quite relevant.
 
-## TKTK Mipmaps
+## A little image goes a long way
 
-Mipmaps are a fairly old and extremely common technique for storing smaller versions of the same texture alongside itself, usually ones whose dimensions are reduced by increasing powers of 2. So in addition to our 64x64 texture image, a mipmap would also include copies of the same image at 32x32, 16x16, 8x8, and so on. Why? Well, it all comes down to nasty property of math called _aliasing_.
+Mipmaps are a fairly old and commonplace technique for storing smaller versions of the same texture alongside the original. Usually, these smaller copies are ones whose dimensions are reduced by increasing powers of 2, so in addition to our 64x64 texture above, its mipmap would also include copies at 32x32, 16x16, 8x8, and so on. Why? Well, it all comes down to nasty property of digital signals called _aliasing_.
 
-Suppose you're looking at a 3D scene of a painting on the wall, and suppose that painting is 64x64. If your camera is at exactly the right distance from the painting, each of those texture pixels (also known as a _texel_) will occupy exactly 1 of your screen's pixels, rendering a perfectly 1:1 version of the texture. If your camera moves any closer, each texel will correspond to a couple of the screen's pixels, yielding a blockier, "pixelated" look to the texture.
+Suppose you're looking at a 3D scene of a black and white checkerboard floor. The tiles closest to your camera will look pretty normal, since the tiles are large enough that your screen's pixels generally only need to be entirely white or entirely black. But because of perspective, as your eye looks farther into the distance, the tiles will become smaller. And since the pixels on your screen aren't getting any smaller, eventually you'll run into instances where a single pixel will need to somehow depict both a black and a white tile, meaning some of the checkerboard image's data will necessarily have to be discarded.
 
-But suppose you move any further away from it. Now we have the opposite problem, where each pixel corresponds to multiple texels! Since a pixel can only be a single color, we're going to have to throw away some data about the texels occupying it, and this can lead to all sorts of artistically undesirable effects, such as [jaggies](fixme) or [moire patterns](fixme). These are due to a mathematically fascinating but extremely obnoxious phenomenon known as [aliasing](fixme), which occurs whenever you sample (i.e. pick a pixel color) a signal (i.e. a texture) at a lower frequency (i.e. resolution) than its original.
+<Image caption="A checkerboard floor exhibiting aliasing artifacts. Image by BillyBob CornCob" src="/images/crazy-taxi/no-mipmapping-sans-text.png" />
 
-You've probably heard of _[anti-aliasing](fixme)_, which refers to a family of techniques for mitigating the aforementioned jaggies etc. Unfortunately, anti-aliasing techniques are generally more computationally expensive than simply telling the GPU to simply plop down the color of the nearest texel, so instead of letting the shader do all the work all the time, developers will usually create pre-downsampled versions of their textures to be used instead when they'd otherwise be downsampled. And this, dear readers, is what a mipmap is.
+As you can see in this image, this can lead to all sorts of artistically undesirable effects, such as [jaggies](https://en.wikipedia.org/wiki/Jaggies) or [moiré patterns](https://en.wikipedia.org/wiki/Moiré_pattern). These are due to a mathematically fascinating, but extremely obnoxious, phenomenon known as [aliasing](https://en.wikipedia.org/wiki/Aliasing). Aliasing occurs whenever you sample (i.e. pick a pixel color) a signal (i.e. a texture) at a much lower frequency (i.e. resolution) than its original.
+
+You've probably heard of _[anti-aliasing](https://en.wikipedia.org/wiki/Spatial_anti-aliasing)_, which refers to a family of techniques for mitigating the aforementioned jaggies etc. Unfortunately, anti-aliasing techniques are generally more computationally expensive than simply telling the GPU to simply plop down the color of the nearest texel. So, instead of letting the shader do all the work all the time, developers will usually create pre-downsampled versions of their textures to be used when the image would be rendered small enough. And this, dear readers, is what a mipmap is.
+
+<Image caption="Screenshot from noclip's UI showing each mipmap for TT_shop_04.tex" src="/images/crazy-taxi/noclip-ui-mipmap.png" />
 
 <Aside>
 
-Despite working with mipmaps a great deal over the last few years, I'd never actually looked into why they're called that. As it turns out, the "mip" part is an initialism of the latin phrase _multum in parvo_, which translates to "much in little", and refers to the fact that no matter how big the original image is, a full mipmap will be at most 33% as large. This is due to the fact that each mip contains $\dfrac{1}{4}$ of the area of the previous one, and:
+Despite working with mipmaps a great deal over the last few years, I'd never actually looked into why they're called that. As it turns out, the "mip" part is an initialism of the latin phrase _multum in parvo_, which translates to "much in little", and refers to the fact that no matter how big the original image is, a full mipmap will be at most 33% as large. This is because each mip level contains $\dfrac{1}{4}$ of the area of the previous one, and:
 
 $$
 \dfrac{1}{4} + \dfrac{1}{16} + \dfrac{1}{32} + ... = \dfrac{1}{3}
@@ -159,16 +154,167 @@ $$
 
 </Aside>
 
-## TKTK CMPR
+A GPU can easily use its depth buffer to sample smaller mips for further pixels, letting us do a depth-aware form of anti-aliasing very cheaply. Here's the same checkerboard example from above, but this time using mipmapping to prevent aliasing:
 
-So what does `CMPR` data look like? Well, since it's compressed, it's not super easy to visually inspect the values and mentally derive the RGB pixel data. But based on [noclip's implementation of `CMPR`](https://github.com/magcius/noclip.website/blob/20bf97bfeec686c4e8467efb0085e1db3306f313/rust/src/gx_texture.rs#L200), we can do some basic sanity checks here.
+<Image caption="A checkerboard floor without aliasing artifacts, due to use of mipmapping. Image by BillyBob CornCob" src="/images/crazy-taxi/with-mipmapping-sans-text.png" />
 
-`CMPR` images are composed of 8-byte blocks, each of which represents a 4x4 grids of pixels in the image. A block starts with two colors encoded as `RGB565` values, a two-byte format where 5 bits are used to encode a red value, 6 bits are used for green, and 5 are used for blue. Two more colors are produced by blending between the initial two, forming a gradient of 4 colors. Each of the 16 pixels is then represented by two bits, which index into the 4 color gradient.
+With all of this in mind, let's see if we can make sense of our texture's pixel data.
+
+## CMPR? I hardly KNWR!
+
+So what does our texture data look like? Well, since it's compressed using Nintendo's `CMPR` format, it's not super easy to visually inspect the values and look for RGB pixel data. But based on [noclip's implementation of `CMPR`](https://github.com/magcius/noclip.website/blob/20bf97bfeec686c4e8467efb0085e1db3306f313/rust/src/gx_texture.rs#L200), we can do some basic sanity checks here.
+
+`CMPR` images are composed of 8-byte blocks, each of which represents a 4x4 grids of pixels in the image. A block starts with two colors encoded as `RGB565` values, a two-byte format where 5 bits are used to encode a red value, 6 bits are used for green, and 5 are used for blue. Two more colors are produced by blending between the initial two, forming a table of 4 colors. The remaining 4 bytes is used to represent the 16 pixels, each being composed of two bits that represent which of the four colors is used for that pixel.
+
+To illustrate this, I made a little widget that decodes each block of pixels individually. Select blocks in the list at the top-left, and it'll show how the 8 bytes of that block turn into 16 pixels:
 
 <CmprDecoder file={CTData.TTShop04} />
 
-Since we know our image's dimensions (64x64), we would expect our texture to have $\frac{64 * 64}{4 * 4} = 256$ of these blocks. But recall that our texture is mipmapped, so there's also a 32x32 copy of the texture, which works out to $\frac{32 * 32}{4 * 4} = 64$ more blocks. Then a 16x16 copy, which is 16 blocks, then an 8x8 (4 blocks), a 4x4 (1 block), and finally the 2x2 and 1x1 mipmaps which are allotted 1 block apiece.
+<Aside>
+
+Those who are familiar with texture formats may recognize this general schema as [DXT1 (or BC1)](https://en.wikipedia.org/wiki/S3_Texture_Compression#DXT1), a compression format developed (and patented!) by a company called S3 Graphics. Nintendo licensed the use of this format, but made one minor tweak to its color formula to squeeze out some extra performance on their limited harware.
+
+In the original DXT1 scheme, the third and fourth colors are blended using a formula like this:
+
+$$$
+\begin{align}
+c_2 = \frac{2}{3}c_0 + \frac{1}{3}c_1 \\
+\\
+c_3 = \frac{1}{3}c_0 + \frac{2}{3}c_1
+\end{align}
+$$$
+
+To avoid these four costly floating-point multiplications, Nintendo used coefficients that are multiples of $\frac{1}{8}$, namely $\frac{3}{8}$ and $\frac{5}{8}$, allowing these blends to be performed using only bitwise operations:
+
+```javascript
+((x << 1) + x) >> 3 // multiply by 3/8
+((x << 2) + x) >> 3 // multiply by 5/8
+```
+
+This is far cheaper for computers to perform, while only differing from DXT1's results by a small degree for 1-byte values.
+
+</Aside>
+
+Since we know our image's dimensions (64x64), we would expect our texture to have $\frac{64 * 64}{4 * 4} = 256$ of these blocks. But recall that our texture is mipmapped, so there's also a 32x32 copy of the texture, which works out to $\frac{32 * 32}{4 * 4} = 64$ more blocks. Then a 16x16 copy, which is 16 blocks, then an 8x8 (4 blocks), a 4x4 (1 block), and finally the 2x2 and 1x1 mips which are allotted 1 block apiece.
 
 All told, that's 343 blocks, which at 8 bytes apiece yields 2,744 bytes total for this texture. But if you subtract the offset where `TT_shop_04.tex`'s pixel data starts (`0x60`) from where it ends (`0xAFF`), you get 2,720 bytes. We're missing 24 bytes, or 3 `CMPR` blocks!
 
-As it turns out, that's equal to the number of blocks for the 4x4, 2x2, and 1x1 mips. So 3 of our 6 mips appear to be excluded from the texture data, and as it turns out, the `u32` at offset `0x18` of `TT_shop_04.tex` happens to be 3. As such, we can go ahead and name that field `num_mips`.
+As it turns out, that's equal to the number of blocks for the 4x4, 2x2, and 1x1 mips. So one might guess that 3 of our 6 mips are excluded from the texture data, and as it turns out, the `u32` at offset `0x18` of `TT_shop_04.tex` happens to equal 3. Doing a similar block-count analysis on other `CMPR` textures reveals the same pattern, so let's go ahead and name the `u32` at `0x18` `num_mips`.
+
+Now that we've squared away our textures, let's figure out how to get the rest of this Pizza Hut drawn.
+
+## VAT hunting
+
+Recall from Part 2 that the thing which actually renders stuff on GameCube is called a Display List (or DL), and it starts with an index into Vertex Attribute Table (or VAT). The VAT contains all the useful format information for the shape's vertex positions, texture coordinates (aka `uv` coordinates), color data, etc. But crucially, the _DLs only contain an index into the VAT_, and not the VAT entry itself.
+
+Since we didn't have the VAT entry for `cube0.shp` in Part 2, we basically eyeballed the binary data for colors, positions, etc. until we figured out their various formats, allowing us to actually render the dang thing. That approach just isn't going to scale to 2,700+ other models, so it's high time we actually figured how those VAT entries are created.
+
+And I won't beat around the bush, this process **sucked**. I ended up spending _hours_ in Ghidra, an open source reverse engineering toolkit, poring over the game's executable trying to find something that resembled the VAT list. And although I won't be detailing this exploration since it was mostly fruitless, I wanted to mention it because sometimes the process of reverse engineering has dead ends and leads that go nowhere, and that's OK! During this process I still learned a lot, and ended up manually annotating a bunch of code that ended up being helpful later in the project.
+
+All that said, I did find one promising lead in Ghidra: the `GXFIFO` register. While flailing about and basically decompiling functions at random, I found a bunch that referenced a named register called `GXFIFO`. I recognized GX as the codename for GameCube's graphics system, and knew `FIFO` to mean ["first-in, first-out"](https://en.wikipedia.org/wiki/FIFO_(computing_and_electronics)), which generally refers to a queue-like interface. Asking Jasper about it, he mentioned that reading/writing to the `GXFIFO` register is pretty much the only way to interface with the GameCube's GPU pipeline. Display Lists, for example, are submitted to the GPU by writing them to `GXFIFO`. And indeed, when a game creates VAT entries, it does so by writing them there.
+
+He also mentioned that if spelunking in Ghidra isn't seeming fruitful, the GameCube emulator [Dolphin](https://dolphin-emu.org) has a great feature called the [FIFO Player](https://github.com/dolphin-emu/dolphin/wiki/FIFO-Player-Overview) which records all data written to the `GXFIFO` register and lets you inspect them. This, as it turns out, was our ticket.
+
+## FIFO 2026 (is this anything)
+
+As I alluded to earlier, virtually everything on the screen in a GameCube game is drawn by sending commands to the `GXFIFO` register. So, if you keep track of the data written to `GXFIFO`, along with some bookkeeping about the state of some other registers, you can effectively analyze and play back any number of frames without even having the game's binary. This is exactly what Dolphin's FIFO Player does, and despite having a few warts, it's one of the most useful tools I used while reversing Crazy Taxi.
+
+Here's an example of the FIFO player analyzing a frame outside of our Pizza Hut:
+
+<Image caption="Dolphin's FIFO Player displaying frame data" src="/images/crazy-taxi/pizza-hut-fifo.png" />
+<Image caption="A single frame from Crazy Taxi generated from a FIFO file" src="/images/crazy-taxi/pizza-hut-fifo-game.png" />
+
+<Aside>
+
+If you'd like to follow along with this part, you can download the FIFO file for the above frame [here](/etc/crazy-taxi/pizzahut-fifo.dff). To open it, install Dolphin, then open the FIFO Player in the "Tools" menu bar dropdown and load the file.
+
+</Aside>
+
+In the screenshots above, we're looking at a single `GX_DRAW_TRIANGLES` Display List that happens to correspond to the Pizza Hut's roof. How'd I know it's the roof? In the FIFO Player window, if you click back over to the "Play/Record" tab, you can set a limit to how many objects are rendered per frame. As it turns out, if you set that limit to 293 objects, the roof disappears, but set it to 294 and it comes back, meaning "Object 294" is our guy.
+
+<video controls preload="metadata">
+    <source src="/videos/crazytaxi/fifo-roof-finding.mp4#t=0.1" type="video/mp4" />
+</video>
+
+Seeing the Display Lists is cool, but as a reminder, we're here to see some VAT entries. And although the DL in the screenshot above does mention `VAT 3`, the VAT itself is nowhere to be found in any of the FIFO calls. Tragically, that's because by the time this frame was recorded, the VAT entries had all already been sent to the `GXFIFO` register. So what do we do?
+
+## We fork Dolphin
+
+We fork Dolphin. You see, as I mentioned before, the FIFO Player records not only `GXFIFO` data, but also some data about the other GameCube registers. And as it happens, VATs are stored in a section of registers called the Command Processor, or CP. If we dump the CP registers, we can view the state of the VAT at the time of this frame! This can be done a couple of ways, but I went about it by [iterating through every single CP register related to VATs](https://github.com/wgreenberg/dolphin/blob/f414256d6b4acae0a0ee18cb6e1840b02debe8dc/Source/Core/DolphinQt/FIFO/FIFOAnalyzer.cpp#L629-L634) on each draw call. Now, for every single draw call, Dolphin will dump every VAT entry, yielding 8 blocks of rather verbose info like this:
+
+```
+VTXFMT 3
+Position elements: 3 (x, y, z) (1)
+Position format: Short (3)
+Position shift: 14 (6.1035156e-05)
+Normal elements: 1 (normal) (0)
+Normal format: Unsigned Byte (0)
+Color 0 elements: 3 (r, g, b) (0)
+Color 0 format: RGB 24 bits 888 (1)
+Color 1 elements: 3 (r, g, b) (0)
+Color 1 format: RGB 16 bits 565 (0)
+Texture coord 0 elements: 2 (s, t) (1)
+Texture coord 0 format: Short (3)
+Texture coord 0 shift: 7 (0.0078125)
+Byte dequant: shift applies to u8/s8 components
+Normal index 3: single index shared by normal, tangent, and binormal
+Texture coord 1 elements: 1 (s) (0)
+Texture coord 1 format: Unsigned Byte (0)
+Texture coord 1 shift: 0 (1)
+Texture coord 2 elements: 1 (s) (0)
+Texture coord 2 format: Unsigned Byte (0)
+Texture coord 2 shift: 0 (1)
+Texture coord 3 elements: 1 (s) (0)
+Texture coord 3 format: Unsigned Byte (0)
+Texture coord 3 shift: 0 (1)
+Texture coord 4 elements: 1 (s) (0)
+Texture coord 4 format: Unsigned Byte (0)
+Enhance VCache (must always be on): Yes
+Texture coord 4 shift: 0 (1)
+Texture coord 5 elements: 1 (s) (0)
+Texture coord 5 format: Unsigned Byte (0)
+Texture coord 5 shift: 0 (1)
+Texture coord 6 elements: 1 (s) (0)
+Texture coord 6 format: Unsigned Byte (0)
+Texture coord 6 shift: 0 (1)
+Texture coord 7 elements: 1 (s) (0)
+Texture coord 7 format: Unsigned Byte (0)
+Texture coord 7 shift: 0 (1)
+```
+
+As it happens, this readout of every VAT ended up being the same regardless of the draw call. And while that ends up being incredibly convenient for us, it's not guaranteed to be the case! If a game needs more than 8 VAT formats, it can create new ones at runtime, meaning the CP state might change between frames. But, because Crazy Taxi has a fairly simple set of model formats, it seems to set its 8 VATs at startup and then never changes them. As such, we can just record the above output for a single draw call, and then we've got all the VAT entries we'll need to render every model in the game!
+
+noclip expects VATs to be defined in terms of TypeScript enums, so the Dolphin output above would become something like this in our renderer:
+
+```typescript
+let vat: GX_VtxAttrFmt[] = [];
+vat[GX.Attr.POS] = { compCnt: GX.CompCnt.POS_XYZ, compType: GX.CompType.S16, compShift: 14 };
+vat[GX.Attr.NRM] = { compCnt: GX.CompCnt.NRM_XYZ, compType: GX.CompType.U8, compShift: 0 };
+vat[GX.Attr.CLR0] = { compCnt: GX.CompCnt.CLR_RGB, compType: GX.CompType.RGB8, compShift: 0 };
+vat[GX.Attr.CLR1] = { compCnt: GX.CompCnt.CLR_RGB, compType: GX.CompType.RGB565, compShift: 0 };
+vat[GX.Attr.TEX0] = { compCnt: GX.CompCnt.TEX_ST, compType: GX.CompType.S16, compShift: 7 };
+vats[GX.VtxFmt.VTXFMT3] = vat;
+```
+
+Repeat for each VAT, and now noclip knows how to read every draw call for every model.
+
+## Pizza Time
+
+In this post, we've decoded textures, we've dumped VATs from a snapshot of the GameCube's graphics pipeline, and at last we are ready to go full Hut. Behold:
+
+<video controls preload="metadata">
+    <source src="/videos/crazytaxi/pizza-hut-flythrough.mp4#t=0.1" type="video/mp4" />
+</video>
+
+Magnificent, but that's not all! Through the use of judicious `grep`ing, we can determine the `.shp` for any of our beloved brands, letting us finally display any storefront we could possibly want:
+
+<Image caption="A FILA store, floating in the void" src="/images/crazy-taxi/fila.png" />
+<Image caption="A KFC store, floating in the void" src="/images/crazy-taxi/kfc.png" />
+<Image caption="A Tower Records store, floating in the void" src="/images/crazy-taxi/tower.png" />
+<Image caption="A Levi's store, floating in the void" src="/images/crazy-taxi/levis.png" />
+
+Indeed, any individual shape file we choose can now be rendered! Which naturally begs the question, what would happen if we render them all at once?
+
+<Image caption="Hundreds of models overlapping chaotically" src="/images/crazy-taxi/all-shps-at-once.png" />
+
+Hm. That, um, doesn't seem right. In the next post, we'll dig a bit deeper into how game models combine into game worlds, and hopefully by the end of it will have a nearly perfect simulacrum of Crazy Taxi!

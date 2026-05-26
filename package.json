@@ -43,7 +43,7 @@
 		"vitest": "^2.0.4"
 	},
 	"dependencies": {
-		"@tailwindcss/typography": "^0.5.15",
+		"@tailwindcss/typography": "^0.5.19",
 		"github-slugger": "^2.0.0",
 		"gl-matrix": "^3.4.4",
 		"mdast-util-to-string": "^4.0.0",

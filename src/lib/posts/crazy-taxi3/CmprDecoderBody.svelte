@@ -13,6 +13,7 @@
     }
     function getHexCode(color: [number, number, number]): string {
         return '#' + color.map(c => c.toString(16))
+            .map(c => c.length === 1 ? '0' + c : c)
             .reduce((x, a) => x + a, '');
     }
     let bitstring = $derived(getBitstring(block.bytes))
@@ -23,13 +24,19 @@
     <div class="flex flex-row">
         <span class="mr-1">{name}:</span>
         {#if offset !== undefined}
-            <span class="font-mono bg-red-500">{bitstring.slice(offset + 0, offset + 5)}</span>
-            <span class="font-mono bg-green-500">{bitstring.slice(offset + 5, offset + 11)}</span>
-            <span class="font-mono bg-blue-500">{bitstring.slice(offset + 11, offset + 16)}</span>
-            <span class="mx-1">=</span>
+            <div class="">
+                <span class="font-mono bg-red-500">{bitstring.slice(offset + 0, offset + 5)}</span>
+                <span class="font-mono bg-green-500">{bitstring.slice(offset + 5, offset + 11)}</span>
+                <span class="font-mono bg-blue-500">{bitstring.slice(offset + 11, offset + 16)}</span>
+            </div>
+        {:else}
+            <span class="">blend(color0, color1)</span>
         {/if}
-        <div class="font-mono" style="background-color: {hexcode}">
-            <span class="text-white text-shadow-black text-shadow-lg">{hexcode}</span>
+        <span class="mx-1">=</span>
+        <div class="">
+            <div class="font-mono w-fit" style="background-color: {hexcode}">
+                <span style="color: contrast-color({hexcode})">{hexcode}</span>
+            </div>
         </div>
     </div>
 {/snippet}
@@ -39,25 +46,27 @@
     {@const pixelBitstring = block.pixels[i].toString(2)}
     {@const padding = pixelBitstring.length < 2 ? '0' : ''}
     <div class="font-mono px-1" style="background-color: {hexcode}">
-        <span class="text-white text-shadow-black text-shadow-lg">{padding + pixelBitstring}</span>
+        <span style="color: contrast-color({hexcode})">{padding + pixelBitstring}</span>
     </div>
 {/snippet}
 
-<div class="flex flex-col">
+<div class="flex flex-col p-1">
     <div>
-        <span>Data:</span>
+        <span>Bytes:</span>
         <ByteSpan data={block.bytes} />
     </div>
-    <div>
+    <div class="flex flex-col">
         {@render color("color0", 0, block.colors[0])}
         {@render color("color1", 16, block.colors[1])}
-        {@render color("Gradient color2", undefined, block.colors[2])}
-        {@render color("Gradient color3", undefined, block.colors[3])}
+        {@render color("color2", undefined, block.colors[2])}
+        {@render color("color3", undefined, block.colors[3])}
     </div>
-    <div>Pixels:</div>
-    <div class="grid grid-cols-4 w-fit border-dashed border">
-        {#each { length: 16 }, i}
-            {@render pixel(i)}
-        {/each}
+    <div class="flex flex-row">
+        <div>Pixels:</div>
+        <div class="grid grid-cols-4 w-fit border-dashed border">
+            {#each { length: 16 }, i}
+                {@render pixel(i)}
+            {/each}
+        </div>
     </div>
 </div>
