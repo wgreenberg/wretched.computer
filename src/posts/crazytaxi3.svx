@@ -104,7 +104,7 @@ Recall that our `.shp` file contains not only a model's vertex attributes and GX
 
 <HexEditor file={CTData.PizzaHutShp} littleEndian={false} startOffset={0x7c40} />
 
-Unsurprisingly, there's quite a few more textures here than were in `cube0.shp`, and keen eyes might recognize `white.tex`, which was also present in `cube0.shp`. Actually, every single `.shp` file's texture list starts with `white.tex`, and I never really figured why.
+Unsurprisingly, there's quite a few more textures here than were in `cube0.shp`, and keen eyes might recognize `white.tex`, which was also present in `cube0.shp`. Actually, every single `.shp` file's texture list starts with `white.tex`, and I never really figured out why.
 
 Anyway, our goal is to turn this block of data into a list of filenames. You might take a second to scan through this listing and see if you can identify how to parse it into one.
 
@@ -136,9 +136,9 @@ Suppose you're looking at a 3D scene of a black and white checkerboard floor. Th
 
 <Image caption="A checkerboard floor exhibiting aliasing artifacts. Image by BillyBob CornCob" src="/images/crazy-taxi/no-mipmapping-sans-text.png" />
 
-As you can see in this image, this can lead to all sorts of artistically undesirable effects, such as [jaggies](https://en.wikipedia.org/wiki/Jaggies) or [moiré patterns](https://en.wikipedia.org/wiki/Moiré_pattern). These are due to a mathematically fascinating, but extremely obnoxious, phenomenon known as [aliasing](https://en.wikipedia.org/wiki/Aliasing). Aliasing occurs whenever you sample (i.e. pick a pixel color) a signal (i.e. a texture) at a much lower frequency (i.e. resolution) than its original.
+As you can see in this image, this can lead to all sorts of artistically undesirable effects, such as [jaggies](https://en.wikipedia.org/wiki/Jaggies) and [moiré patterns](https://en.wikipedia.org/wiki/Moiré_pattern). These are due to the mathematically fascinating, but extremely obnoxious, phenomenon known as [aliasing](https://en.wikipedia.org/wiki/Aliasing). Aliasing occurs whenever you sample (i.e. pick a pixel color) a signal (i.e. a texture) at a much lower frequency (i.e. resolution) than its original.
 
-You've probably heard of _[anti-aliasing](https://en.wikipedia.org/wiki/Spatial_anti-aliasing)_, which refers to a family of techniques for mitigating the aforementioned jaggies etc. Unfortunately, anti-aliasing techniques are generally more computationally expensive than simply telling the GPU to simply plop down the color of the nearest texel. So, instead of letting the shader do all the work all the time, developers will usually create pre-downsampled versions of their textures to be used when the image would be rendered small enough. And this, dear readers, is what a mipmap is.
+You've probably heard of _[anti-aliasing](https://en.wikipedia.org/wiki/Spatial_anti-aliasing)_, which refers to a family of techniques for mitigating the aforementioned jaggies etc. Unfortunately, anti-aliasing techniques are generally more computationally expensive than simply telling the GPU to simply plop down the color of the nearest texture pixel, or _texel_. So, instead of letting the shader do all the work all the time, developers will usually create pre-downsampled versions of their textures to be used when the image would be rendered small enough. And this, dear readers, is what a mipmap is.
 
 <Image caption="Screenshot from noclip's UI showing each mipmap for TT_shop_04.tex" src="/images/crazy-taxi/noclip-ui-mipmap.png" />
 
@@ -195,9 +195,9 @@ It's actually pretty remarkable that we can achieve such a decent color gradient
 
 </Aside>
 
-Since we know our image's dimensions (64x64), we would expect our texture to have $\frac{64 * 64}{4 * 4} = 256$ of these blocks. But recall that our texture is mipmapped, so there's also a 32x32 copy of the texture, which works out to $\frac{32 * 32}{4 * 4} = 64$ more blocks. Then a 16x16 copy, which is 16 blocks, then an 8x8 (4 blocks), a 4x4 (1 block), and finally the 2x2 and 1x1 mips which are allotted 1 block apiece.
+Since we know our image's dimensions (64x64), we would expect our texture to have $\frac{64 * 64}{4 * 4} = 256$ of these blocks. But recall that our texture is mipmapped, so there's also a 32x32 copy of the texture, which works out to $\frac{32 * 32}{4 * 4} = 64$ more blocks. Then a 16x16 copy (16 blocks), then an 8x8 (4 blocks), a 4x4 (1 block), and finally the 2x2 and 1x1 mips which are allotted 1 block apiece.
 
-All told, that's 343 blocks, which at 8 bytes apiece yields 2,744 bytes total for this texture. But if you subtract the offset where `TT_shop_04.tex`'s pixel data starts (`0x60`) from where it ends (`0xAFF`), you get 2,720 bytes. We're missing 24 bytes, or 3 `CMPR` blocks!
+All told, that's 343 blocks, which at 8 bytes per block yields 2,744 bytes total for this texture. But if you subtract the offset where `TT_shop_04.tex`'s pixel data starts (`0x60`) from where it ends (`0xAFF`), you get 2,720 bytes. We're missing 24 bytes, or 3 `CMPR` blocks!
 
 As it turns out, that's equal to the number of blocks for the 4x4, 2x2, and 1x1 mips. So one might guess that 3 of our 6 mips are excluded from the texture data, and as it turns out, the `u32` at offset `0x18` of `TT_shop_04.tex` happens to equal 3. Doing a similar block-count analysis on other `CMPR` textures reveals the same pattern, so let's go ahead and name the `u32` at `0x18` `num_mips`.
 
@@ -215,11 +215,11 @@ All that said, I did find one promising lead in Ghidra: the `GXFIFO` register. W
 
 He also mentioned that if spelunking in Ghidra isn't seeming fruitful, the GameCube emulator [Dolphin](https://dolphin-emu.org) has a great feature called the [FIFO Player](https://github.com/dolphin-emu/dolphin/wiki/FIFO-Player-Overview) which records all data written to the `GXFIFO` register and lets you inspect them. This, as it turns out, was our ticket.
 
-## FIFO 2026 (is this anything)
+## Run it back
 
 As I alluded to earlier, virtually everything on the screen in a GameCube game is drawn by sending commands to the `GXFIFO` register. So, if you keep track of the data written to `GXFIFO`, along with some bookkeeping about the state of some other registers, you can effectively analyze and play back any number of frames without even having the game's binary. This is exactly what Dolphin's FIFO Player does, and despite having a few warts, it's one of the most useful tools I used while reversing Crazy Taxi.
 
-Here's an example of the FIFO player analyzing a frame outside of our Pizza Hut:
+Here's an example of the FIFO player analyzing a frame captured outside of our Pizza Hut:
 
 <Image caption="Dolphin's FIFO Player displaying frame data, and the rendered game frame itself" srcs={[
     "/images/crazy-taxi/pizza-hut-fifo.png",
@@ -238,11 +238,13 @@ In the screenshots above, we're looking at a single `GX_DRAW_TRIANGLES` Display 
     <source src="/videos/crazytaxi/fifo-roof-finding.mp4#t=0.1" type="video/mp4" />
 </video>
 
-Tabbing through the Display Lists is very cool, but as a reminder, we're here to see some VAT entries. And although the DL in the screenshot above does mention `VAT 3`, the VAT itself is nowhere to be found in any of the FIFO calls. Tragically, that's because by the time this frame was recorded, the VAT entries had all already been sent to the `GXFIFO` register. So what do we do?
+Tabbing through the Display Lists is very cool, but as a reminder, we're here to see some VAT entries. And although the DL in the screenshot above does mention `VAT 3`, the VAT entry itself is nowhere to be found in any of the FIFO calls. Tragically, that's because by the time this frame was recorded, the VAT entries had all already been sent to the `GXFIFO` register. So what do we do?
 
 ## We fork Dolphin
 
-We fork Dolphin. You see, as I mentioned before, the FIFO Player records not only `GXFIFO` data, but also some data about the other GameCube registers. And as it happens, VATs are stored in a section of registers called the Command Processor, or CP. If we dump the CP registers, we can view the state of the VAT at the time of this frame! This can be done a couple of ways, but I went about it by [iterating through every single CP register related to VATs](https://github.com/wgreenberg/dolphin/blob/f414256d6b4acae0a0ee18cb6e1840b02debe8dc/Source/Core/DolphinQt/FIFO/FIFOAnalyzer.cpp#L629-L634) on each draw call. Now, for every single draw call, Dolphin will dump every VAT entry, yielding 8 blocks of rather verbose info like this:
+We fork Dolphin. You see, as I mentioned before, the FIFO Player records not only `GXFIFO` data, but also some data about the other GameCube registers. And as it happens, VATs are stored in a section of registers called the Command Processor, or CP. If we modify Dolphin to dump the CP registers, we can view the state of the VAT at the time of this frame!
+
+This can be done in a couple ways, but I went about it by [iterating through every single CP register related to VATs](https://github.com/wgreenberg/dolphin/blob/f414256d6b4acae0a0ee18cb6e1840b02debe8dc/Source/Core/DolphinQt/FIFO/FIFOAnalyzer.cpp#L629-L634) on each draw call. Now, for every single draw call, Dolphin will dump every VAT entry, yielding 8 sections (one per VAT entry) of rather verbose info like this:
 
 ```
 VTXFMT 3
@@ -284,7 +286,7 @@ Texture coord 7 format: Unsigned Byte (0)
 Texture coord 7 shift: 0 (1)
 ```
 
-As it happens, this readout of every VAT ended up being the same regardless of the draw call. And while that ends up being incredibly convenient for us, it's not guaranteed to be the case! If a game needs more than 8 VAT formats, it can create new ones at runtime, meaning the CP state might change between frames. But, because Crazy Taxi has a fairly simple set of model formats, it seems to set its 8 VATs at startup and then never changes them. As such, we can just record the above output for a single draw call, and then we've got all the VAT entries we'll need to render every model in the game!
+As it happens, regardless of which frame I dumped these VAT entries, the output was always the same. And while that ends up being incredibly convenient for us since it means Crazy Taxi only uses 8 VATs, it's by no means guaranteed to be the case! If a game needs more than 8 VAT formats, it can create new ones at runtime, meaning the CP state might change between frames. But, because Crazy Taxi has a fairly simple set of model formats, it seems to set its 8 VATs at startup and then never changes them. As such, we can just record the above output for a single draw call, and then we've got all the VAT entries we'll need to render every model in the game.
 
 noclip expects VATs to be defined in terms of TypeScript enums, so the Dolphin output above would become something like this in our renderer:
 
@@ -317,6 +319,12 @@ vat[GX.Attr.TEX0] = {
 };
 vats[GX.VtxFmt.VTXFMT3] = vat;
 ```
+
+<Aside>
+
+If you're wondering what noclip's `compShift` and Dolphin's `Position Shift` refer to, it's the number of fractional bits to use for that number's [fixed-point interpretation](https://en.wikipedia.org/wiki/Fixed-point_arithmetic).
+
+</Aside>
 
 Repeat for each VAT, and now noclip knows how to read every draw call for every model.
 
@@ -365,7 +373,7 @@ Note that we have two remaining unknown parts: a block of `0xc8` bytes at the st
 
 For a long time, I just referred to this as the "mystery shp section", since it has a sorta chaotic structure that didn't clearly map to anything.
 
-It also has some somewhat misleading features, such as the fact that 100% of the shape files' mystery sections start with <ByteSpan data={[0, 0, 0, 0x38]} /> followed by a bunch of null bytes. This, I can say now with the benefit of hindsight, is what we call in the business a _red herring_. You see, `0x38` happens to point exactly to the start of the `unk_block1` in the shape file's header, leading me to believe there was a connection between the two. And if there is, it sure isn't related to what the remainder of this section represents!
+It also has some somewhat misleading features, such as the fact that 100% of the shape files' mystery sections start with <ByteSpan data={[0, 0, 0, 0x38]} /> followed by a bunch of null bytes. This, I can say now with the benefit of hindsight, is what we in the business call a _red herring_. You see, `0x38` happens to point exactly to the start of the `unk_block1` in the shape file's header, leading me to believe there was a connection between the two. And if there is, it sure isn't related to what the remainder of this section represents!
 
 But anyway, this section took me quite a while to crack, so please bear with me while I try to recap my thought process for decoding it.
 
