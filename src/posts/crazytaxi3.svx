@@ -84,7 +84,7 @@ poldc3_stream.all
 poldc3.all
 ```
 
-Being that there are 3 main maps in the GameCube version (Arcade, Original, and the Crazy Box collection), my guess was that the "dc1", "dc2", and "dc3" might refer to those, with "DC0" seemingly being the odd one out as it has no `_stream` companion. Maybe it's used for shared models, or models used in the main menu?
+Being that there are 2 main maps in the GameCube version (Arcade and Original) and a bunch of mini-maps (the Crazy Box collection), my guess was that the "dc1", "dc2", and "dc3" might refer to those, with "DC0" seemingly being the odd one out as it has no `_stream` companion. Maybe it's used for shared models, or models used in the main menu?
 
 <Aside>
 
@@ -98,23 +98,21 @@ The `stream` part of the filename probably refers to the technique of streaming 
 
 ## About those textures
 
-Now that we've got a handle on which `.shp` represents the Arcade Mode's Pizza Hut, I'd like to finally demystify how we parsed the textures in the previous post's cube model. But first, how do we find a model's textures?
+Now that we've got a guess on which `.shp` represents the Arcade Mode's Pizza Hut, I'd like to finally demystify how we parsed the textures in the previous post's cube model. But first, how do we find a model's textures?
 
 Recall that our `.shp` file contains not only a model's vertex attributes and GX Display Lists, but also a list of texture files at the end. Let's take a look at the list for the Arcade version of Pizza Hut:
 
 <HexEditor file={CTData.PizzaHutShp} littleEndian={false} startOffset={0x7c40} />
 
-Unsurprisingly, there's quite a few more textures here than were in `cube0.shp`, and keen eyes might recognize `white.tex`, which was also present in `cube0.shp`. Actually, every single `.shp` file's texture list starts with `white.tex`, and I never really figured why. Take a second to scan through this listing and see if you can see a pattern here.
+Unsurprisingly, there's quite a few more textures here than were in `cube0.shp`, and keen eyes might recognize `white.tex`, which was also present in `cube0.shp`. Actually, every single `.shp` file's texture list starts with `white.tex`, and I never really figured why.
 
-As I mentioned in the first post, when you're looking at lists of objects in binary, a good first step is to try and determine whether the items have a fixed size or a variable size. If each item starts with an integer-y value, or corresponds to a list of integers elsewhere in the file, it's worth checking whether there's that many bytes of data following it, and whether the pattern repeats from there. If not, there's a decent chance the items are fixed sized.
+Anyway, our goal is to turn this block of data into a list of filenames. You might take a second to scan through this listing and see if you can identify how to parse it into one.
 
-In this case, the data starts with ASCII string data with no clear integer lengths in sight, so the texture names are probably fixed length. Counting ahead from the start of the `white.tex` to the start of the next string yields `0x2c` bytes, and then looking another `0x2c` bytes ahead, we see the start of another string. So that looks to be our block size!
-
-Finally, whenever ASCII strings are stored in a file, unless they're accompanied by a byte length you can usually assume that they're null-terminated, i.e. the string's end is indicated by a <ByteSpan data={[0]} /> byte. And sure enough, we do see a null byte at the end of each occurrence of `.tex`. But we've also got some random ASCII data strewn after these termination bytes, such as at offsets `0x7ca6` and `0x7cd4`.
+Using a similar [analysis to `.all` files in Part 1](https://wretched.computer/post/crazytaxi#an-archive-of-our-own), it's pretty clear that this list uses fixed-length blocks of `0x2c` bytes, and since the strings themselves have no clear lengths defined, we can assume they're null-terminated, i.e. the string's end is indicated by a <ByteSpan data={[0]} /> byte. And sure enough, we do see a null byte at the end of each occurrence of `.tex`. But we've also got some random ASCII data strewn after these termination bytes, such as at offsets `0x7ca6` and `0x7cd4`.
 
 While this _might_ be meaningful data, I think this is much more likely to be junk data similar to what we saw at the end of [Part 2, Section 7](http://localhost:5173/post/crazytaxi2#a-return-to-the-cube). And since it always follows the terminating null byte, it's very easy to simply discard this data.
 
-After all of this, we've got an easy way to read off the full list of textures used by this model. So let's try reading one of them.
+Now that we've got a list of the Pizza Hut's texture files, let's try reading one of them.
 
 ## Photo Shop
 
@@ -124,7 +122,7 @@ The first texture listed in our Pizza Hut model is called `TT_shop_04.tex`, whic
 
 Now, since Jasper's the one who figured out the `.tex` format, I'll mostly be echoing his wisdom here, but if you've worked with textures a bit before, you might be able to figure out a bit of what's going on here without too much difficulty.
 
-That's because texture formats are often just different rearrangements of the same basic types of data: the dimensions of the texture, maybe a flag or two describing the format of the pixel data, and some information about a somewhat complicated thing called a _mipmap_. Setting aside the last item for now, take a look at the binary data and see if you can make a guess as to the dimensions our texture. Hint: it's usually a nice even power of 2.
+That's because texture formats are often just different rearrangements of the same basic types of data: the dimensions of the texture, maybe a flag or two describing the format of the pixel data, and some information about a somewhat complicated thing called a _mipmap_. Setting aside the last item for now, take a look at the binary data and see if you can make a guess as to the dimensions our texture. Hint: it's usually a nice even power of 2, and will be rather small since we're looking at a GameCube texture.
 
 Once we've got our dimensions, the next step is figuring out what the pixel data's format is, and here we've got good news and bad news. The bad news is there's a _ton_ of pixel data formats out there, and some of the more common compressed ones (like Unity's [Crunch](https://docs.unity3d.com/2021.2/Documentation/Manual/texture-compression-formats.html#crunch-compression)) are complicated and not well documented. The good news is GameCube's GX API only uses a handful of formats, all of which are fairly well understood at this point. And notably, one of the more common GX formats called `CMPR` (for "compressed") uses a flag value [`0x0E`](https://github.com/dolphin-emu/dolphin/blob/d19952cc113940391ebcf264ced7ddc56310ba75/Source/Core/VideoCommon/TextureDecoder.h#L34), which just so happens to be what we see in `TT_shop_04.tex` at offset `0x0C`!
 
@@ -146,7 +144,7 @@ You've probably heard of _[anti-aliasing](https://en.wikipedia.org/wiki/Spatial_
 
 <Aside>
 
-Despite working with mipmaps a great deal over the last few years, I'd never actually looked into why they're called that. As it turns out, the "mip" part is an initialism of the latin phrase _multum in parvo_, which translates to "much in little", and refers to the fact that no matter how big the original image is, a full mipmap will be at most 33% as large. This is because each mip level contains $\dfrac{1}{4}$ of the area of the previous one, and:
+Despite working with mipmaps a great deal over the last few years, I'd never actually looked into why they're called that. As it turns out, the "mip" part is an initialism of the latin phrase _multum in parvo_, which translates to "much in little", and refers to the fact that no matter how big the original image is, adding a mipmap will only ever add 33% more data. This is because each mip level contains $\dfrac{1}{4}$ of the area of the previous one, and:
 
 $$
 \dfrac{1}{4} + \dfrac{1}{16} + \dfrac{1}{32} + ... = \dfrac{1}{3}
@@ -172,7 +170,7 @@ To illustrate this, I made a little widget that decodes each block of pixels ind
 
 <Aside>
 
-Those who are familiar with texture formats may recognize this general schema as [DXT1 (or BC1)](https://en.wikipedia.org/wiki/S3_Texture_Compression#DXT1), a compression format developed (and patented!) by a company called S3 Graphics. Nintendo licensed the use of this format, but made one minor tweak to its color formula to squeeze out some extra performance on their limited harware.
+Those who are familiar with texture formats may recognize this general schema as [DXT1 (or BC1)](https://en.wikipedia.org/wiki/S3_Texture_Compression#DXT1), a compression format developed (and patented!) by a company called S3 Graphics. ArtX, the company that designed the GameCube's GPU, licensed the use of this format, but made one minor tweak to its color formula to squeeze out some extra performance on their limited hardware.
 
 In the original DXT1 scheme, the third and fourth colors are blended using a formula like this:
 
@@ -191,7 +189,9 @@ To avoid these four costly floating-point multiplications, Nintendo used coeffic
 ((x << 2) + x) >> 3 // multiply by 5/8
 ```
 
-This is far cheaper for computers to perform, while only differing from DXT1's results by a small degree for 1-byte values.
+This is far cheaper for computers to perform, while only differing from DXT1's results by a small degree for 1-byte color values.
+
+It's actually pretty remarkable that we can achieve such a decent color gradient using only 4 bytes of data, and by using just 4 more bytes for 16 pixels, we end up with a surprisingly rich way to represent an image using very little data.
 
 </Aside>
 
@@ -221,8 +221,10 @@ As I alluded to earlier, virtually everything on the screen in a GameCube game i
 
 Here's an example of the FIFO player analyzing a frame outside of our Pizza Hut:
 
-<Image caption="Dolphin's FIFO Player displaying frame data" src="/images/crazy-taxi/pizza-hut-fifo.png" />
-<Image caption="A single frame from Crazy Taxi generated from a FIFO file" src="/images/crazy-taxi/pizza-hut-fifo-game.png" />
+<Image caption="Dolphin's FIFO Player displaying frame data, and the rendered game frame itself" srcs={[
+    "/images/crazy-taxi/pizza-hut-fifo.png",
+    "/images/crazy-taxi/pizza-hut-fifo-game.png",
+]} />
 
 <Aside>
 
@@ -236,7 +238,7 @@ In the screenshots above, we're looking at a single `GX_DRAW_TRIANGLES` Display 
     <source src="/videos/crazytaxi/fifo-roof-finding.mp4#t=0.1" type="video/mp4" />
 </video>
 
-Seeing the Display Lists is cool, but as a reminder, we're here to see some VAT entries. And although the DL in the screenshot above does mention `VAT 3`, the VAT itself is nowhere to be found in any of the FIFO calls. Tragically, that's because by the time this frame was recorded, the VAT entries had all already been sent to the `GXFIFO` register. So what do we do?
+Tabbing through the Display Lists is very cool, but as a reminder, we're here to see some VAT entries. And although the DL in the screenshot above does mention `VAT 3`, the VAT itself is nowhere to be found in any of the FIFO calls. Tragically, that's because by the time this frame was recorded, the VAT entries had all already been sent to the `GXFIFO` register. So what do we do?
 
 ## We fork Dolphin
 
@@ -288,33 +290,154 @@ noclip expects VATs to be defined in terms of TypeScript enums, so the Dolphin o
 
 ```typescript
 let vat: GX_VtxAttrFmt[] = [];
-vat[GX.Attr.POS] = { compCnt: GX.CompCnt.POS_XYZ, compType: GX.CompType.S16, compShift: 14 };
-vat[GX.Attr.NRM] = { compCnt: GX.CompCnt.NRM_XYZ, compType: GX.CompType.U8, compShift: 0 };
-vat[GX.Attr.CLR0] = { compCnt: GX.CompCnt.CLR_RGB, compType: GX.CompType.RGB8, compShift: 0 };
-vat[GX.Attr.CLR1] = { compCnt: GX.CompCnt.CLR_RGB, compType: GX.CompType.RGB565, compShift: 0 };
-vat[GX.Attr.TEX0] = { compCnt: GX.CompCnt.TEX_ST, compType: GX.CompType.S16, compShift: 7 };
+vat[GX.Attr.POS] = {
+    compCnt: GX.CompCnt.POS_XYZ,
+    compType: GX.CompType.S16,
+    compShift: 14,
+};
+vat[GX.Attr.NRM] = {
+    compCnt: GX.CompCnt.NRM_XYZ,
+    compType: GX.CompType.U8,
+    compShift: 0,
+};
+vat[GX.Attr.CLR0] = {
+    compCnt: GX.CompCnt.CLR_RGB,
+    compType: GX.CompType.RGB8,
+    compShift: 0,
+};
+vat[GX.Attr.CLR1] = {
+    compCnt: GX.CompCnt.CLR_RGB,
+    compType: GX.CompType.RGB565,
+    compShift: 0,
+};
+vat[GX.Attr.TEX0] = {
+    compCnt: GX.CompCnt.TEX_ST,
+    compType: GX.CompType.S16,
+    compShift: 7,
+};
 vats[GX.VtxFmt.VTXFMT3] = vat;
 ```
 
 Repeat for each VAT, and now noclip knows how to read every draw call for every model.
 
+## So close, and yet...
+
+So we've got our textures decoded, and we've got our DLs matched up with their VATs, but there's one major thing keeping us from Pizza Time: how do we know which textures each DL should use?
+
+In the last post, `cube0.shp` had 2 draws and 2 textures, and simply lining them up worked just fine. And if we look at `course_4b_048_a_ph.shp` a.k.a. Pizza Hut, we've got 44 draws and 44 textures. So surely we can just do the same thing?
+
+<Image caption="Pizza Hut Gone Wrong" src="/images/crazy-taxi/pizza-hut-bad-textures.png" />
+
+Well, it's certainly a look.
+
+On the bright side, we seem to have the right _shape_ for a Pizza Hut, which means our VATs are probably just fine. But clearly that the textures are all wrong. And in fact, this approach simply breaks for some other models! For example, `course_dc3b_052k.shp` (a.k.a. the _Other_ Pizza Hut) has 91 draws but only 89 textures, foiling our one-to-one approach. So clearly, the Crazy Taxi engine is doing something slightly more sophisticated to associate DLs with their textures.
+
+It's time we briefly returned to the humble `.shp` file, since there's one block of data there we haven't yet explored.
+
+## The final `unk`s
+
+By the end of Part 2, here's the Rust struct we used to parse our `.shp` file header:
+
+```rust
+#[derive(DekuRead)]
+#[deku(endian = "big")]
+pub struct ShpHeader {
+    #[deku(assert_eq = "1.0")]
+    pub version: f32,
+    unk_block1: [u8; 0xc8],
+    // vertex attributes
+    pub pos_offset: u32,
+    pub norm_offset: u32,
+    pub clr_offsets: [u32; 2],
+    pub tex_offsets: [u32; 8],
+    padding0: [u8; 0x14],
+    // final four offsets
+    pub unk_offset0: u32,
+    pub pos_offset_dupe: u32,
+    pub display_list_offset: u32,
+    pub texture_list_offset: u32,
+}
+```
+
+Note that we have two remaining unknown parts: a block of `0xc8` bytes at the start, and one of the "final four offset" to some unknown data elsewhere in the file. If there's some association between draw calls and textures, it would need to be of variable size and possibly much larger than `0xc8` bytes, so we can probably rule that section out. Instead, let's take a look at the data pointed to by Pizza Hut's `unk_offset0`:
+
+<HexEditor file={CTData.PizzaHutShp} littleEndian={false} startOffset={0x2040} displayLength={0x680} />
+
+For a long time, I just referred to this as the "mystery shp section", since it has a sorta chaotic structure that didn't clearly map to anything.
+
+It also has some somewhat misleading features, such as the fact that 100% of the shape files' mystery sections start with <ByteSpan data={[0, 0, 0, 0x38]} /> followed by a bunch of null bytes. This, I can say now with the benefit of hindsight, is what we call in the business a _red herring_. You see, `0x38` happens to point exactly to the start of the `unk_block1` in the shape file's header, leading me to believe there was a connection between the two. And if there is, it sure isn't related to what the remainder of this section represents!
+
+But anyway, this section took me quite a while to crack, so please bear with me while I try to recap my thought process for decoding it.
+
+## Pattern recognition
+
+Here's the mystery section data again:
+
+<HexEditor file={CTData.PizzaHutShp} littleEndian={false} startOffset={0x2040} displayLength={0x680} />
+
+If you stare at the bytes long enough, you might notice that after the first few dozen bytes, there's a pattern of 4-byte values like <ByteSpan data={[0xdf, 0xdf, 0xdf, 0xff]} /> or <ByteSpan data={[0xff, 0xff, 0xff, 0xff]} /> regularly occurring every 36 bytes. And if you count the total bytes from the start of the section to the last such 4-byte value at offset `0x26b4`, that gives 1,656 bytes, which is a multiple of 36. Thus, it seems likely that this section is composed of 36-byte blocks.
+
+_And!_ As it happens, $\frac{1656}{36}=44$, which is exactly the number of draw calls/textures in this Pizza Hut model!
+
+Moreover, if we ignore the first red herring block, each block seems to start with a suspiciously offset-sized value, like <ByteSpan data={[0, 0, 0x26, 0xc0]} /> in the second block, which happens to point to the model's first Display List. The third block starts with <ByteSpan data={[0, 0, 0x2a, 0x00]} />, which the start of another Display List, and so on. Indeed, the only block that doesn't follow this pattern is our red herring at the start.
+
+To me, this is was enough to suggest that each of these blocks might be metadata about each of the DLs. And with a bit more poking around at the values, I was able to pretty quickly deduce that each block's first `u32` was a DL offset, the second was that DL's length, and the third always seemed to be smallish `u32` that always seemed to be less than the number of textures. So, I tried parsing them with something like this:
+
+```rust
+#[derive(DekuRead)]
+#[deku(endian = "big")]
+pub struct ShapeDrawInfo {
+    pub display_list_addr: u32,
+    pub display_list_size: u32,
+    pub texture_index: u32,
+    pub unk_0x0c: u32,
+    pub unk_0x10: u32,
+    pub unk_0x14: u32,
+    pub unk_0x18: u32,
+    pub unk_0x1c: u32,
+    pub unk_0x20: u32,
+}
+```
+
+<Aside>
+
+The red herring block's `display_list_size` always ends up being 0, so it's easy to ignore programatically.
+
+</Aside>
+
+Finally, if for each `ShapeDrawInfo` we draw the DL at `display_list_addr` with the texture specified by `texture_index`, we get this:
+
+<Image caption="Pizza Hut Restored" src="/images/crazy-taxi/pizza-hut-solo.png" />
+
 ## Pizza Time
 
-In this post, we've decoded textures, we've dumped VATs from a snapshot of the GameCube's graphics pipeline, and at last we are ready to go full Hut. Behold:
+At last, we are ready to go full Hut. Behold:
 
 <video controls preload="metadata">
     <source src="/videos/crazytaxi/pizza-hut-flythrough.mp4#t=0.1" type="video/mp4" />
 </video>
 
-Magnificent, but that's not all! Through the use of judicious `grep`ing, we can determine the `.shp` for any of our beloved brands, letting us finally display any storefront we could possibly want:
+Magnificent. And, if we compare this `poldc1` model with a screenshot of the Arcade Mode version of Pizza Hut, we find that it is a match:
 
-<Image caption="A FILA store, floating in the void" src="/images/crazy-taxi/fila.png" />
-<Image caption="A KFC store, floating in the void" src="/images/crazy-taxi/kfc.png" />
-<Image caption="A Tower Records store, floating in the void" src="/images/crazy-taxi/tower.png" />
-<Image caption="A Levi's store, floating in the void" src="/images/crazy-taxi/levis.png" />
+<Image caption="Pizza Hut in Arcade Mode" src="/images/crazy-taxi/arcade-pizza-hut.png" />
+
+Now let's see if the `poldc2` version matches Original Mode:
+<Image caption="Pizza Hut model from poldc2_stream.all, and a screenshot from Original Mode" srcs={[
+    "/images/crazy-taxi/poldc2-pizza-hut-noclip.png",
+    "/images/crazy-taxi/original-pizza-hut.png",
+]} />
+
+Theory confirmed, but that's not all! Through the use of judicious `grep`ing, we can determine the `.shp` for any of our beloved brands, letting us finally display any storefront we could possibly want:
+
+<Image caption="Various branded storefronts floating in the void" srcs={[
+    "/images/crazy-taxi/fila.png",
+    "/images/crazy-taxi/kfc.png",
+    "/images/crazy-taxi/tower.png",
+    "/images/crazy-taxi/levis.png",
+]} />
 
 Indeed, any individual shape file we choose can now be rendered! Which naturally begs the question, what would happen if we render them all at once?
 
 <Image caption="Hundreds of models overlapping chaotically" src="/images/crazy-taxi/all-shps-at-once.png" />
 
-Hm. That, um, doesn't seem right. As it happens, there's a bit more involved in assembling each of these pieces to form the game world. In the next post, we'll dive into that and hopefully end up with a nearly complete Crazy Taxi level!
+Hm. That, um, doesn't seem right. As it happens, there's a bit more involved in assembling each of these pieces to form the game world, and in the next post, we'll dive into that and, hopefully, end up with a nearly complete Crazy Taxi level!

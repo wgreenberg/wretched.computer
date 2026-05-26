@@ -11,9 +11,9 @@
     {#if src !== undefined}
         <img {src} alt={alt ? alt : caption}>
     {:else}
-        <div class="flex flex-row">
+        <div class="flex flex-row flex-wrap">
             {#each srcs as src}
-                <img {src} alt={alt ? alt : caption}>
+                <img class="mt-0.5 mb-0.5" {src} alt={alt ? alt : caption}>
             {/each}
         </div>
     {/if}
