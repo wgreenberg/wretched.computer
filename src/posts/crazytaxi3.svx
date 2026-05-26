@@ -24,7 +24,7 @@ This is the third of a series of posts detailing how I put interactive, [3D vers
 
 </CrazyTaxiPartHeader>
 
-By the end of [Part 2](/post/crazytaxy2), we'd covered quite a bit of ground: learning about how 3D models are stored as vertex attributes, how those attributes are represented in the GameCube's Graphics Library (a.k.a. GX), and how Crazy Taxi's `.shp` file format contains the GX Display Lists that describe how to draw a model. After all of this, we were only able to render one measly cube.
+By the end of [Part 2](/post/crazytaxi2), we'd covered quite a bit of ground: learning about how 3D models are stored as vertex attributes, how those attributes are represented in the GameCube's Graphics Library (a.k.a. GX), and how Crazy Taxi's `.shp` file format contains the GX Display Lists that describe how to draw a model. After all of this, we were only able to render one measly cube.
 
 And we didn't even cover everything need to do that! I skipped over how Jasper, [noclip.website](https://noclip.website)'s creator, reverse engineered the texture format, and didn't really touch on how noclip turns GX DisplayLists into WebGL/WebGPU calls that can be rendered in the browser.
 
