@@ -21,24 +21,23 @@
 
 {#snippet color(name: string, offset: number | undefined, color: [number, number, number])}
     {@const hexcode = getHexCode(color)}
-    <div class="flex flex-row">
-        <span class="mr-1">{name}:</span>
+    <tr>
+        <td>{name}</td>
         {#if offset !== undefined}
-            <div class="">
+            <td class="">
                 <span class="font-mono bg-red-500">{bitstring.slice(offset + 0, offset + 5)}</span>
                 <span class="font-mono bg-green-500">{bitstring.slice(offset + 5, offset + 11)}</span>
                 <span class="font-mono bg-blue-500">{bitstring.slice(offset + 11, offset + 16)}</span>
-            </div>
+            </td>
         {:else}
-            <span class="">blend(color0, color1)</span>
+            <td class="">blend(color0, color1)</td>
         {/if}
-        <span class="mx-1">=</span>
-        <div class="">
+        <td class="">
             <div class="font-mono w-fit" style="background-color: {hexcode}">
                 <span style="color: contrast-color({hexcode})">{hexcode}</span>
             </div>
-        </div>
-    </div>
+        </td>
+    </tr>
 {/snippet}
 
 {#snippet pixel(i: number)}
@@ -50,18 +49,27 @@
     </div>
 {/snippet}
 
-<div class="flex flex-col p-1">
+<div class="flex flex-col m-3">
     <div>
         <span>Bytes:</span>
         <ByteSpan data={block.bytes} />
     </div>
+    <table class="table-auto">
+        <thead>
+            <tr>
+                <th>Color</th>
+                <th>Source</th>
+                <th>Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            {@render color("0", 0, block.colors[0])}
+            {@render color("1", 16, block.colors[1])}
+            {@render color("2", undefined, block.colors[2])}
+            {@render color("3", undefined, block.colors[3])}
+        </tbody>
+    </table>
     <div class="flex flex-col">
-        {@render color("color0", 0, block.colors[0])}
-        {@render color("color1", 16, block.colors[1])}
-        {@render color("color2", undefined, block.colors[2])}
-        {@render color("color3", undefined, block.colors[3])}
-    </div>
-    <div class="flex flex-row">
         <div>Pixels:</div>
         <div class="grid grid-cols-4 w-fit border-dashed border">
             {#each { length: 16 }, i}

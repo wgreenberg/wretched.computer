@@ -15,10 +15,10 @@
             title: "Part 2: Reversing shape files",
             url: "/post/crazytaxi2"
         },
-        {
-            title: "Part 3: Reversing textures",
-            url: "/post/crazytaxi3"
-        },
+        // {
+        //     title: "Part 3: Reversing textures",
+        //     url: "/post/crazytaxi3"
+        // },
     ]
 </script>
 

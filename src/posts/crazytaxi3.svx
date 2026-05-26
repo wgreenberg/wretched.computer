@@ -1,7 +1,7 @@
 ---
 title: Reverse Engineering Crazy Taxi, Part 3
 description: Turning bytes into brands
-date: 3/29/2026
+date: 5/25/2026
 published: false
 toc: true
 ---
@@ -317,4 +317,4 @@ Indeed, any individual shape file we choose can now be rendered! Which naturally
 
 <Image caption="Hundreds of models overlapping chaotically" src="/images/crazy-taxi/all-shps-at-once.png" />
 
-Hm. That, um, doesn't seem right. In the next post, we'll dig a bit deeper into how game models combine into game worlds, and hopefully by the end of it will have a nearly perfect simulacrum of Crazy Taxi!
+Hm. That, um, doesn't seem right. As it happens, there's a bit more involved in assembling each of these pieces to form the game world. In the next post, we'll dive into that and hopefully end up with a nearly complete Crazy Taxi level!

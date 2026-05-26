@@ -1,7 +1,5 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import ByteSpan from "../crazy-taxi/ByteSpan.svelte";
-import type { FileData } from "../crazy-taxi/data";
+    import type { FileData } from "../crazy-taxi/data";
 	import CmprDecoderBody from "./CmprDecoderBody.svelte";
 	import CmprDecoderImage from "./CmprDecoderImage.svelte";
 
@@ -15,10 +13,6 @@ import type { FileData } from "../crazy-taxi/data";
     let numBlocks = $derived(width * height / 16);
     let format = $derived(dataView.getUint32(0xc, false));
     let selectedBlock = $state(0);
-    // onMount(() => {
-    //     const selectedBlockElement = document.getElementById("cmpr-blocks")!.children[selectedBlock];
-    //     selectedBlockElement.scrollIntoView();
-    // });
     $effect(() => {
         if (format !== 0xe) {
             throw new Error(`invalid format ${format}`);
@@ -128,19 +122,24 @@ import type { FileData } from "../crazy-taxi/data";
     });
 </script>
 
-<div class="flex flex-col prose-sm bg-gray-600">
-    <div class="flex flex-row border-dotted border rounded-t-lg p-1">
-        <div id="cmpr-blocks" class="overflow-scroll max-h-64 px-1 flex flex-col bg-gray-700">
-            {#each { length: numBlocks }, i}
-            <button class="p-1 {selectedBlock == i ? "bg-green-950" : ""}" onclick={() => selectedBlock = i}>
-                Block {i}
-            </button>
-            {/each}
+<div class="flex flex-col w-full items-center">
+    <div class="flex flex-col prose-sm font-mono w-fit">
+        <div class="bg-gray-900 w-fit pl-1 pr-1 rounded-t-lg">
+            <span>{file.title}</span>
         </div>
-        <CmprDecoderBody block={blocks[selectedBlock]} />
-    </div>
-    <div class="border-dotted border rounded-b-lg p-1 border-t-0 flex flex-col items-center">
-        <span>Result texture:</span>
-        <CmprDecoderImage {width} {height} {blocks} {selectedBlock} />
+        <div class="flex flex-row border-dotted border rounded-tr-lg h-96 bg-gray-600">
+            <div id="cmpr-blocks" class="overflow-scroll px-1 flex flex-col bg-gray-700 h-full">
+                {#each { length: numBlocks }, i}
+                <button class="p-1 {selectedBlock == i ? "bg-green-950" : ""}" onclick={() => selectedBlock = i}>
+                    Block {i}
+                </button>
+                {/each}
+            </div>
+            <CmprDecoderBody block={blocks[selectedBlock]} />
+        </div>
+        <div class="border-dotted border rounded-b-lg p-1 border-t-0 flex flex-col items-center bg-gray-600">
+            <span>Result texture:</span>
+            <CmprDecoderImage {width} {height} {blocks} {selectedBlock} />
+        </div>
     </div>
 </div>
