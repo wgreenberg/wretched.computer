@@ -91,7 +91,7 @@
     <div class="text-center overflow-clip rounded-md w-14 m-1 p-2">
         <span class="inline-flex">
             <span>{count}x</span>
-            <img class="m-0" width=20 height=20 src={symbol.icon} alt={symbol.name} />
+            <img class="m-0 mb-0 mt-0 h-6 w-6" width=20 height=20 src={symbol.icon} alt={symbol.name} />
         </span>
     </div>
 {/snippet}
@@ -113,7 +113,7 @@
                 <option value={i}>{symbol.name}</option>
             {/each}
         </select>
-        <img class="m-0" height=20 width=20 src={SYMBOLS[idxHorizontal].icon} alt={SYMBOLS[idxHorizontal].name} >
+        <img class="m-0 mb-0 mt-0 h-6 w-6" src={SYMBOLS[idxHorizontal].icon} alt={SYMBOLS[idxHorizontal].name} >
     </div>
     <div class="ml-2 inline-flex space-x-1 prose-green">
         <label for="b">Symbol 2</label>
@@ -122,7 +122,7 @@
                 <option value={i}>{symbol.name}</option>
             {/each}
         </select>
-        <img class="m-0" height=20 width=20 src={SYMBOLS[idxVertical].icon} alt={SYMBOLS[idxVertical].name} >
+        <img class="m-0 mb-0 mt-0 h-6 w-6" height=20 width=20 src={SYMBOLS[idxVertical].icon} alt={SYMBOLS[idxVertical].name} >
     </div>
     {#if distribution}
         <span><u>Outcome Distribution:</u></span>

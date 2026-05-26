@@ -2,6 +2,7 @@
     import MainBox from "$lib/components/MainBox.svelte";
 	import TableOfContents from "$lib/components/TableOfContents.svelte";
     import TitleBox from "$lib/components/TitleBox.svelte";
+	import UnderConstruction from "$lib/components/UnderConstruction.svelte";
     import type { PageData } from "./$types";
     let { data }: { data: PageData } = $props();
 
@@ -14,6 +15,7 @@
         });
     }
     let hasToc = $derived(!!data.metadata.toc);
+    let published: boolean = $derived(!!data.metadata.published)
 </script>
 
 <title>{data.metadata.title}</title>
@@ -26,26 +28,10 @@
     {#if hasToc}
         <TableOfContents headings={data.headings} />
     {/if}
+    {#if !published}
+        <UnderConstruction />
+    {/if}
     <MainBox>
         {@render data.content()}
     </MainBox>
 </main>
-
-<style>
-@reference "tailwindcss";
-    :global(.frac-line) {
-        border-color: --tw-prose-body;
-    }
-
-    :global(.math-display) {
-        @apply bg-(--tw-prose-pre-bg) rounded-md p-1 mb-2 m-0 overflow-auto shadow-md w-full;
-    }
-
-    :global(pre) {
-        @apply overflow-auto w-full shadow-md;
-    }
-
-    :global(img) {
-        @apply rounded-md shadow-md self-center;
-    }
-</style>
