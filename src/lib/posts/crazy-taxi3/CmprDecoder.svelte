@@ -12,7 +12,7 @@
     let height = $derived(dataView.getUint32(0x4, false));
     let numBlocks = $derived(width * height / 16);
     let format = $derived(dataView.getUint32(0xc, false));
-    let selectedBlock = $state(115);
+    let selectedBlock = $state(0);
     $effect(() => {
         if (format !== 0xe) {
             throw new Error(`invalid format ${format}`);
