@@ -4,6 +4,7 @@ description: Turning bytes into brands
 date: 5/25/2026
 published: false
 toc: true
+previewImageUrl: /images/crazy-taxi/pizza-hut-solo.png
 ---
 
 <script>

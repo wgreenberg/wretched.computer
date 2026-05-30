@@ -4,6 +4,7 @@ description: Or how I learned to stop worrying and love the cube
 date: 3/29/2026
 published: true
 toc: true
+previewVideoUrl: /videos/crazytaxi/cube.mp4
 ---
 
 <script>

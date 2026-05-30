@@ -8,7 +8,7 @@
 <tr class={`${hidden}`}>
     <td class="align-middle">{post.date}</td>
     <td class="flex flex-col">
-        <a href={getPostPath(post)}><span>{post.title}</span></a>
+        <a href={getPostPath(post.slug)}><span>{post.title}</span></a>
         <span class="text-ellipsis">{post.description}</span>
     </td>
 </tr>

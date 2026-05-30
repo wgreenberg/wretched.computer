@@ -9,12 +9,12 @@ export interface Post {
     published: boolean;
 }
 
-export function getAbsolutePostUrl(post: Post): string {
-    return `${SITE_CONFIG.url}/${getPostPath(post)}`;
+export function getAbsolutePostUrl(slug: string): string {
+    return `${SITE_CONFIG.url}/${getPostPath(slug)}`;
 }
 
-export function getPostPath(post: Post): string {
-    return `/post/${post.slug}`;
+export function getPostPath(slug: string): string {
+    return `/post/${slug}`;
 }
 
 export async function getPosts(): Promise<Post[]> {

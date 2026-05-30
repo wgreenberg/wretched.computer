@@ -4,6 +4,7 @@ description: For some reason I put Crazy Taxi's levels into the browser and You 
 date: 2/28/2026
 published: true
 toc: true
+previewVideoUrl: /videos/crazytaxi/flythrough.mp4
 ---
 
 <script>

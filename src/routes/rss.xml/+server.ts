@@ -20,8 +20,8 @@ export async function GET({ fetch }) {
 						<item>
 							<title>${post.title}</title>
 							<description>${post.description}</description>
-							<link>${getAbsolutePostUrl(post)}</link>
-							<guid isPermaLink="true">${getAbsolutePostUrl(post)}</guid>
+							<link>${getAbsolutePostUrl(post.slug)}</link>
+							<guid isPermaLink="true">${getAbsolutePostUrl(post.slug)}</guid>
 							<pubDate>${new Date(post.date).toUTCString()}</pubDate>
 						</item>
 					`
