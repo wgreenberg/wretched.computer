@@ -16,7 +16,7 @@
             url: "/post/crazytaxi2"
         },
         // {
-        //     title: "Part 3: Reversing textures",
+        //     title: "Part 3: Reversing textures & rendering every shape file",
         //     url: "/post/crazytaxi3"
         // },
     ]

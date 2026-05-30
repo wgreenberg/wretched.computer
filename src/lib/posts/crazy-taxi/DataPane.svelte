@@ -36,7 +36,7 @@ let data2 = `bg-gray-700 ${cellPadding}`;
 </script>
 
 <div class="flex flex-col overflow-auto">
-    <table class="table-fixed m-0">
+    <table class="table-fixed m-0 mt-0.5 mb-0">
         <thead>
             <tr>
                 <th class={bitColumn}>Bits</th>

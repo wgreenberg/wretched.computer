@@ -2,9 +2,7 @@
     <div class="flex flex-row">
         <img alt="Under construction" src="/images/under-construction.gif" />
         <img alt="Under construction" src="/images/under-construction.gif" />
-        <img alt="Under construction" src="/images/under-construction.gif" />
         <img alt="Under construction" src="/images/under-construction-banner.gif" />
-        <img alt="Under construction" src="/images/under-construction.gif" />
         <img alt="Under construction" src="/images/under-construction.gif" />
         <img alt="Under construction" src="/images/under-construction.gif" />
     </div>

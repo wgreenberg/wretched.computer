@@ -149,8 +149,13 @@ function zeroPadHex(n: number, pad: number): string {
             </div>
         </div>
     </div>
-    <div class="bg-gray-600 p-2 border border-dotted border-t-0 rounded-b-lg">
-        <span>Data Inspector:</span>
+    <div class="bg-gray-600 p-2 border border-dotted border-t-0 rounded-b-lg flex flex-col">
+        <span><u>Data Inspector</u></span>
+        <span>Range:
+        {#if highlightStart !== Infinity}
+            0x{highlightStart.toString(16)} to 0x{(highlightEnd.toString(16))}
+        {/if}
+        </span>
         <DataPane data={dataView} index={highlightStart === Infinity ? undefined : highlightStart} {littleEndian} />
     </div>
 </div>

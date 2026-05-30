@@ -34,7 +34,7 @@ In this post, we'll right some of those wrongs by exploring a much more complica
 
 ## Finding the hut
 
-To be honest, rendering Crazy Taxi's Pizza Hut was kinda priority number 1 for me when I got started with this project. I can't exactly say why, but the idea of painstakingly recreating this egregious example of product placement was just really funny to me. Also, because Pizza Hut, KFC, FILA, and Tower Records models [all got de-branded in later versions of the game](https://en.wikipedia.org/wiki/Crazy_Taxi#Setting) due to licensing issues, it made this process a bizarre case of consumerist preservation.
+To be honest, rendering Crazy Taxi's Pizza Hut was kinda priority number 1 for me when I got started with this project. I can't exactly say why, but the idea of painstakingly recreating this egregious example of product placement was just really funny to me. Also, because the Pizza Hut, KFC, FILA, and Tower Records models [all got de-branded in later versions of the game](https://en.wikipedia.org/wiki/Crazy_Taxi#Setting) due to licensing issues, it made this process a bizarre case of consumerist preservation.
 
 <Image caption="'Pizza Parlor' in the Xbox Live Arcade port, via Reddit user u/tejojo" src="/images/crazy-taxi/pizza-parlor.webp" />
 
@@ -61,9 +61,9 @@ $ strings ct-extract/poldc1_stream.all/course_4b_048_a_ph.shp | grep -i pizza
 TT_PizzaHut_log_01_tr.tex
 ```
 
-So it looks like we have two `.shp` models that contain a Pizza Hutty logo (I'm assuming that's what "log" is trying to indicate here). At first it might seem odd that there's _two_ Pizza Hut models, but if you've played the console version of Crazy Taxi, you might already know why that is.
+So, assuming that "log" means "logo", it looks like we have two .shp models that contain a Pizza Hutty logo.. At first it might seem odd that there's _two_ Pizza Hut models, but if you've played the console version of Crazy Taxi, you might already know why that is.
 
-When Crazy Taxi was originally ported from arcades to consoles, it touted both the original "Arcade Mode" map from arcade cabinets, as well as a new and much larger map which was confusingly named "Original Mode". And both maps contain a Pizza Hut model with slightly different surroundings:
+When Crazy Taxi was ported from the arcade to consoles, it touted both its original "Arcade Mode" map, as well as a new and much larger map which was confusingly named "Original Mode". And both maps contain a Pizza Hut model with slightly different surroundings:
 
 <Image caption="Pizza Hut in Arcade Mode" src="/images/crazy-taxi/arcade-pizza-hut.png" />
 <Image caption="Pizza Hut in Original Mode" src="/images/crazy-taxi/original-pizza-hut.png" />
@@ -94,7 +94,7 @@ The `stream` part of the filename probably refers to the technique of streaming 
 
  And, since our Pizza Hut `.shp` files were in archive files referencing `dc1` and `dc2`, I assumed that those might be our Arcade and Original maps.
 
- But is `dc1` the Arcade map, or is `dc2`? Well, I know the Original mode map features a fairly sprawling subway system, and only `poldc2.all` contains models with "train" in their names, so for now let's assume that `dc1` refers to Arcade, and `dc2` refers to Original.
+ But is `dc1` the Arcade map, or is `dc2`? Well, I know the Original mode map features a sprawling subway system, and only `poldc2.all` contains models with "train" in their names. So, for now, let's assume that `dc1` refers to Arcade and `dc2` refers to Original.
 
 ## About those textures
 
@@ -122,7 +122,7 @@ The first texture listed in our Pizza Hut model is called `TT_shop_04.tex`, whic
 
 Now, since Jasper's the one who figured out the `.tex` format, I'll mostly be echoing his wisdom here, but if you've worked with textures a bit before, you might be able to figure out a bit of what's going on here without too much difficulty.
 
-That's because texture formats are often just different rearrangements of the same basic types of data: the dimensions of the texture, maybe a flag or two describing the format of the pixel data, and some information about a somewhat complicated thing called a _mipmap_. Setting aside the last item for now, take a look at the binary data and see if you can make a guess as to the dimensions our texture. Hint: it's usually a nice even power of 2, and will be rather small since we're looking at a GameCube texture.
+That's because texture formats are often just different rearrangements of the same basic types of data: the dimensions of the texture, maybe a flag or two describing the format of the pixel data, and some information about a somewhat complicated thing called a _mipmap_. Setting aside that last item for now, take a look at the binary data and see if you can make a guess as to the dimensions our texture. Hint: it's usually a nice even power of 2, and will be rather small since we're looking at a GameCube texture.
 
 Once we've got our dimensions, the next step is figuring out what the pixel data's format is, and here we've got good news and bad news. The bad news is there's a _ton_ of pixel data formats out there, and some of the more common compressed ones (like Unity's [Crunch](https://docs.unity3d.com/2021.2/Documentation/Manual/texture-compression-formats.html#crunch-compression)) are complicated and not well documented. The good news is GameCube's GX API only uses a handful of formats, all of which are fairly well understood at this point. And notably, one of the more common GX formats called `CMPR` (for "compressed") uses a flag value [`0x0E`](https://github.com/dolphin-emu/dolphin/blob/d19952cc113940391ebcf264ced7ddc56310ba75/Source/Core/VideoCommon/TextureDecoder.h#L34), which just so happens to be what we see in `TT_shop_04.tex` at offset `0x0C`!
 
@@ -130,13 +130,13 @@ But before we dig into how these pixels are encoded, let's revisit mipmaps, sinc
 
 ## A little image goes a long way
 
-Mipmaps are a fairly old and commonplace technique for storing smaller versions of the same texture alongside the original. Usually, these smaller copies are ones whose dimensions are reduced by increasing powers of 2, so in addition to our 64x64 texture above, its mipmap would also include copies at 32x32, 16x16, 8x8, and so on. Why? Well, it all comes down to nasty property of digital signals called _aliasing_.
+Mipmaps are a fairly old and commonplace technique of storing smaller versions of a texture alongside the original. Usually, these smaller copies are ones whose dimensions are reduced by increasing powers of 2, so in addition to our 64x64 texture above, its mipmap would also include copies at 32x32, 16x16, 8x8, and so on. Why would we do this? Well, it all comes down to nasty property of digital signals called _aliasing_.
 
 Suppose you're looking at a 3D scene of a black and white checkerboard floor. The tiles closest to your camera will look pretty normal, since the tiles are large enough that your screen's pixels generally only need to be entirely white or entirely black. But because of perspective, as your eye looks farther into the distance, the tiles will become smaller. And since the pixels on your screen aren't getting any smaller, eventually you'll run into instances where a single pixel will need to somehow depict both a black and a white tile, meaning some of the checkerboard image's data will necessarily have to be discarded.
 
 <Image caption="A checkerboard floor exhibiting aliasing artifacts. Image by BillyBob CornCob" src="/images/crazy-taxi/no-mipmapping-sans-text.png" />
 
-As you can see in this image, this can lead to all sorts of artistically undesirable effects, such as [jaggies](https://en.wikipedia.org/wiki/Jaggies) and [moiré patterns](https://en.wikipedia.org/wiki/Moiré_pattern). These are due to the mathematically fascinating, but extremely obnoxious, phenomenon known as [aliasing](https://en.wikipedia.org/wiki/Aliasing). Aliasing occurs whenever you sample (i.e. pick a pixel color) a signal (i.e. a texture) at a much lower frequency (i.e. resolution) than its original.
+As you can see in this image, this can lead to all sorts of artistically undesirable effects, such as [jaggies](https://en.wikipedia.org/wiki/Jaggies) and [moiré patterns](https://en.wikipedia.org/wiki/Moiré_pattern). These are due to the mathematically fascinating, but extremely obnoxious, phenomenon known as [aliasing](https://en.wikipedia.org/wiki/Aliasing). Aliasing occurs whenever you sample a signal at a much lower frequency than its original, which in our case translates to picking a pixel color from a texture at a lower resolution than the original.
 
 You've probably heard of _[anti-aliasing](https://en.wikipedia.org/wiki/Spatial_anti-aliasing)_, which refers to a family of techniques for mitigating the aforementioned jaggies etc. Unfortunately, anti-aliasing techniques are generally more computationally expensive than simply telling the GPU to simply plop down the color of the nearest texture pixel, or _texel_. So, instead of letting the shader do all the work all the time, developers will usually create pre-downsampled versions of their textures to be used when the image would be rendered small enough. And this, dear readers, is what a mipmap is.
 
@@ -170,7 +170,7 @@ To illustrate this, I made a little widget that decodes each block of pixels ind
 
 <Aside>
 
-Those who are familiar with texture formats may recognize this general schema as [DXT1 (or BC1)](https://en.wikipedia.org/wiki/S3_Texture_Compression#DXT1), a compression format developed (and patented!) by a company called S3 Graphics. ArtX, the company that designed the GameCube's GPU, licensed the use of this format, but made one minor tweak to its color formula to squeeze out some extra performance on their limited hardware.
+This compression scheme is quite similar to [DXT1 (or BC1)](https://en.wikipedia.org/wiki/S3_Texture_Compression#DXT1). ArtX, the company that designed the GameCube's GPU, licensed the use of DXT1, but made one minor tweak to its color formula to squeeze out some extra performance on their limited hardware.
 
 In the original DXT1 scheme, the third and fourth colors are blended using a formula like this:
 
@@ -182,18 +182,18 @@ c_3 = \frac{1}{3}c_0 + \frac{2}{3}c_1
 \end{align}
 $$$
 
-To avoid these four costly floating-point multiplications, Nintendo used coefficients that are multiples of $\frac{1}{8}$, namely $\frac{3}{8}$ and $\frac{5}{8}$, allowing these blends to be performed using only bitwise operations:
+To avoid these four costly floating-point multiplications, the GameCube's implemention uses coefficients that are multiples of $\frac{1}{8}$, namely $\frac{3}{8}$ and $\frac{5}{8}$, allowing the blends to be performed using only bitwise operations:
 
 ```javascript
 ((x << 1) + x) >> 3 // multiply by 3/8
 ((x << 2) + x) >> 3 // multiply by 5/8
 ```
 
-This is far cheaper for computers to perform, while only differing from DXT1's results by a small degree for 1-byte color values.
-
-It's actually pretty remarkable that we can achieve such a decent color gradient using only 4 bytes of data, and by using just 4 more bytes for 16 pixels, we end up with a surprisingly rich way to represent an image using very little data.
+This is far cheaper for computers to perform, and only differing from DXT1's results by a small degree for 1-byte color values.
 
 </Aside>
+
+It's actually pretty remarkable that we can achieve such a decent color gradient using only 4 bytes of data, and by using just 4 more bytes for 16 pixels, we end up with a surprisingly rich way to represent an image using very little data.
 
 Since we know our image's dimensions (64x64), we would expect our texture to have $\frac{64 * 64}{4 * 4} = 256$ of these blocks. But recall that our texture is mipmapped, so there's also a 32x32 copy of the texture, which works out to $\frac{32 * 32}{4 * 4} = 64$ more blocks. Then a 16x16 copy (16 blocks), then an 8x8 (4 blocks), a 4x4 (1 block), and finally the 2x2 and 1x1 mips which are allotted 1 block apiece.
 
@@ -338,9 +338,9 @@ In the last post, `cube0.shp` had 2 draws and 2 textures, and simply lining them
 
 Well, it's certainly a look.
 
-On the bright side, we seem to have the right _shape_ for a Pizza Hut, which means our VATs are probably just fine. But clearly that the textures are all wrong. And in fact, this approach simply breaks for some other models! For example, `course_dc3b_052k.shp` (a.k.a. the _Other_ Pizza Hut) has 91 draws but only 89 textures, foiling our one-to-one approach. So clearly, the Crazy Taxi engine is doing something slightly more sophisticated to associate DLs with their textures.
+On the bright side, we seem to have the right _shape_ for a Pizza Hut, which means our VATs are probably just fine, but clearly something's terribly wrong with the textures. And besides looking terrible, this approach just breaks for some other models! For example, `course_dc3b_052k.shp` (a.k.a. the _Other_ Pizza Hut) has 91 draws but only 89 textures, foiling our one-to-one approach. So clearly, the Crazy Taxi engine is doing something slightly more sophisticated to associate DLs with their textures.
 
-It's time we briefly returned to the humble `.shp` file, since there's one block of data there we haven't yet explored.
+To rectify this, it's time we briefly returned to the humble `.shp` file, since there's one block of data there we haven't yet explored.
 
 ## The final `unk`s
 
@@ -367,7 +367,7 @@ pub struct ShpHeader {
 }
 ```
 
-Note that we have two remaining unknown parts: a block of `0xc8` bytes at the start, and one of the "final four offset" to some unknown data elsewhere in the file. If there's some association between draw calls and textures, it would need to be of variable size and possibly much larger than `0xc8` bytes, so we can probably rule that section out. Instead, let's take a look at the data pointed to by Pizza Hut's `unk_offset0`:
+Note that we have two remaining unknown parts: a block of `0xc8` bytes near the start, and one of the "final four offsets" to some unknown data elsewhere in the file. If there's some association between draw calls and textures, it would need to be of variable size and possibly much larger than `0xc8` bytes, so we can probably rule that section out. Instead, let's take a look at the data pointed to by Pizza Hut's `unk_offset0`:
 
 <HexEditor file={CTData.PizzaHutShp} littleEndian={false} startOffset={0x2040} displayLength={0x680} />
 
