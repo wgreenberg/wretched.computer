@@ -9,6 +9,14 @@
     let { data }: { data: PageData } = $props();
 </script>
 
+<svelte:head>
+    <title>{SITE_CONFIG.title}</title>
+    <meta property="og:title" content={SITE_CONFIG.title} />
+    <meta property="og:description" content={SITE_CONFIG.description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="{SITE_CONFIG.url}/favicon.png" />
+    <meta property="og:url" content={SITE_CONFIG.url} />
+</svelte:head>
 <main class="flex items-center justify-stretch flex-col">
     <TitleBox>
         <h1 class="font-serif">{SITE_CONFIG.title}</h1>
