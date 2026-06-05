@@ -1,8 +1,8 @@
 ---
 title: Reverse Engineering Crazy Taxi, Part 3
 description: Turning bytes into brands
-date: 5/25/2026
-published: false
+date: 6/4/2026
+published: true
 toc: true
 previewImageUrl: /images/crazy-taxi/pizza-hut-solo.png
 ---
@@ -27,7 +27,7 @@ This is the third of a series of posts detailing how I put interactive, [3D vers
 
 By the end of [Part 2](/post/crazytaxi2), we'd covered quite a bit of ground: learning about how 3D models are stored as vertex attributes, how those attributes are represented in the GameCube's Graphics Library (a.k.a. GX), and how Crazy Taxi's `.shp` file format contains the GX Display Lists that describe how to draw a model. After all of this, we were only able to render one measly cube.
 
-And we didn't even cover everything need to do that! I skipped over how Jasper, [noclip.website](https://noclip.website)'s creator, reverse engineered the texture format, and didn't really touch on how noclip turns GX DisplayLists into WebGL/WebGPU calls that can be rendered in the browser.
+And we didn't even cover everything needed to do that! I skipped over how Jasper, [noclip.website](https://noclip.website)'s creator, reverse engineered the texture format, and didn't really touch on how noclip turns GX DisplayLists into WebGL/WebGPU calls that can be rendered in the browser.
 
 In this post, we'll right some of those wrongs by exploring a much more complicated `.shp` model, and by the end of this we should be able to render any of Crazy Taxi's 2,700+ models. And as for which model to target, for my money, there's really only one choice:
 
@@ -449,4 +449,4 @@ Indeed, any individual shape file we choose can now be rendered! Which naturally
 
 <Image caption="Hundreds of models overlapping chaotically" src="/images/crazy-taxi/all-shps-at-once.png" />
 
-Hm. That, um, doesn't seem right. As it happens, there's a bit more involved in assembling each of these pieces to form the game world, and in the next post, we'll dive into that and, hopefully, end up with a nearly complete Crazy Taxi level!
+Hm. That, um, doesn't seem right. As it happens, there's a bit more involved in assembling each of these pieces to form the game world. In the next post we'll dive into that and, hopefully, end up with a nearly complete Crazy Taxi level!
