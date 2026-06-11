@@ -148,7 +148,7 @@ You've probably heard of _[anti-aliasing](https://en.wikipedia.org/wiki/Spatial_
 Despite working with mipmaps a great deal over the last few years, I'd never actually looked into why they're called that. As it turns out, the "mip" part is an initialism of the latin phrase _multum in parvo_, which translates to "much in little", and refers to the fact that no matter how big the original image is, adding a mipmap will only ever add 33% more data. This is because each mip level contains $\dfrac{1}{4}$ of the area of the previous one, and:
 
 $$
-\dfrac{1}{4} + \dfrac{1}{16} + \dfrac{1}{32} + ... = \dfrac{1}{3}
+\dfrac{1}{4} + \dfrac{1}{16} + \dfrac{1}{64} + ... = \dfrac{1}{3}
 $$
 
 </Aside>
