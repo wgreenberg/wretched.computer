@@ -7,6 +7,7 @@ export interface PostMetadata {
     path: string;
     date: string;
     published: boolean;
+    tags: string[];
     toc: boolean;
     previewImageUrl?: string;
     previewVideoUrl?: string;
@@ -38,6 +39,7 @@ export const load: PageLoad = async ({ params }) => {
         description: assertExists(post.metadata.description),
         date: dateToString(assertExists(post.metadata.date)),
         path: getPostPath(params.slug),
+        tags: post.metadata.tags === undefined ? [] : post.metadata.tags.split(', '),
         published: post.metadata.published === undefined ? false : !!post.metadata.published,
         toc: post.metadata.toc === undefined ? false : !!post.metadata.toc,
         previewImageUrl: post.metadata.previewImageUrl,

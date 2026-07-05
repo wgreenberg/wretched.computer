@@ -3,6 +3,7 @@ title: Reverse Engineering Crazy Taxi, Part 4
 description:
 date: 3/29/2026
 published: false
+tags: games
 toc: true
 ---
 

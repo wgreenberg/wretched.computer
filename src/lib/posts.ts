@@ -5,12 +5,13 @@ export interface Post {
     title: string;
     author: string;
     description: string;
+    tags: string;
     date: Date;
     published: boolean;
 }
 
 export function getAbsolutePostUrl(slug: string): string {
-    return `${SITE_CONFIG.url}/${getPostPath(slug)}`;
+    return `${SITE_CONFIG.url}${getPostPath(slug)}`;
 }
 
 export function getPostPath(slug: string): string {
