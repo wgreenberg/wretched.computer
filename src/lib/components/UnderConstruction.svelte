@@ -1,4 +1,4 @@
-<div class="flex flex-col bg-red-500 w-full prose prose-green items-center">
+<div class="flex flex-col bg-orange-800 w-full prose prose-green items-center">
     <div class="flex flex-row">
         <img alt="Under construction" src="/images/under-construction.gif" />
         <img alt="Under construction" src="/images/under-construction.gif" />
